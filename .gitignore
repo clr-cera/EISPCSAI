@@ -1,2 +1,4 @@
 *.zip
 sentiment-dataset
+/models
+*.pyc

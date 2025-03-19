@@ -5,9 +5,16 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "requests>=2.32.3",
-    "tqdm>=4.67.1",
-    "urequests>=0.1.2",
+    "gdown>=5.2.0",
+    "gitpython>=3.1.44",
+    "matplotlib>=3.10.1",
+    "numpy>=2.2.3",
+    "opencv-python>=4.11.0.86",
+    "pandas>=2.2.3",
+    "pyyaml>=6.0.2",
+    "seaborn>=0.13.2",
+    "torch>=2.6.0",
+    "torchvision>=0.21.0",
     "wget>=3.2",
     "xgboost>=2.1.4",
 ]
