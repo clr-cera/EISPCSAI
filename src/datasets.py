@@ -1,4 +1,5 @@
-import wget, zipfile
+import wget
+import zipfile
 import os
 
 # Sentiment analysis

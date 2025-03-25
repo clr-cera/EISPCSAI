@@ -1,6 +1,10 @@
 import os
 
-import gdown, wget, torch, torchvision, cv2
+import gdown
+import wget
+import torch
+import torchvision
+import cv2
 from torchvision import transforms as trn
 from torch.nn import functional as F
 from torch.autograd import Variable as V
