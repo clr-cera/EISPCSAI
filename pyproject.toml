@@ -3,18 +3,21 @@ name = "ecsaid"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 dependencies = [
     "gdown>=5.2.0",
-    "gitpython>=3.1.44",
-    "matplotlib>=3.10.1",
+    "keras>=3.9.0",
+    "mmdnn>=0.3.1",
     "numpy>=2.2.3",
     "opencv-python>=4.11.0.86",
     "pandas>=2.2.3",
-    "pyyaml>=6.0.2",
-    "seaborn>=0.13.2",
+    "pillow>=11.1.0",
+    "ruff>=0.11.2",
+    "scikit-image>=0.25.2",
     "torch>=2.6.0",
     "torchvision>=0.21.0",
+    "transformers>=4.50.0",
+    "ultralytics>=8.3.23",
     "wget>=3.2",
     "xgboost>=2.1.4",
 ]
