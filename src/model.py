@@ -11,8 +11,16 @@ from torch.autograd import Variable as V
 import transformers
 from PIL import Image
 from ultralytics import YOLO
+from mtcnn import MTCNN
+from keras.models import model_from_json
+from tensorflow import compat as compat
+tf = compat.v1
 
-TEST_PATH = "sentiment-dataset/images/0d8a7158-b805-4ce5-967b-7ec631547e71.jpg"
+from tensorflow.python.keras import backend as K
+from skimage import transform
+from faces import get_faces_mtcnn
+
+TEST_PATH = "sentiment-dataset/images/0c5ee3bd-2ac3-4d3e-9838-a4806b159c90.jpg"
 
 def download_models():
     ensure_dir('models/')
@@ -22,6 +30,7 @@ def download_models():
     download_wget('https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11x.pt','models/objects/yolov11.pt')
 
     # Places365
+    ensure_dir('models/scenes/')
     download_wget('http://places2.csail.mit.edu/models_places365/alexnet_places365.pth.tar','models/scenes/alexnet_places365.pth.tar')
     # Shape_Predictor_68_face_landmarks.dat
     download_gdown('1AEtQ2s4k5R7IKdrK6vs_zqH_DvXIeFUK', 'models/fitzpatrick/')
@@ -62,7 +71,7 @@ def infer_objects(dataset: str, device: torch.device, test: bool = False):
             for box in xyxy:
                 start_point = (int(box[0].item()), int(box[1].item()))
                 end_point = (int(box[2].item()), int(box[3].item()))
-                image = cv2.rectangle(image, start_point, end_point, color, thickness)
+                image = draw_rectangle(image, start_point, end_point)
 
             cv2.imwrite('test.jpg', image)
             print(names)
@@ -123,4 +132,71 @@ def infer_scenes(dataset: str, device: torch.device, test: bool = False):
             print('{:.3f} -> {}'.format(probs[i], classes[idx[i]]))
 
 def infer_age_gender(dataset: str, device: torch.device, test: bool = False):
-    pass
+    if test:
+        faces: list = get_face_imgs(TEST_PATH, device, test)
+        age_info = get_age_gender(faces, device, test)
+    
+
+
+def get_age_gender(faces: list, device: torch.device, test: bool):
+    tf.disable_v2_behavior()
+    model_age = model_from_json(
+        open('models/model_age/vgg16_agegender_model.json').read()
+    )
+
+    config = tf.ConfigProto(device_count = {'GPU': 0})
+    sess = tf.Session(config=config)
+    K.set_session(sess)
+
+    age    = []
+    child  = []
+    gender = []
+    with sess:
+        model_age.load_weights("models/model_age/vgg16_agegender.hdf5")
+
+        for index, face in enumerate(faces):
+            if test:
+                cv2.imwrite(f'testface{index}.jpg', face) 
+            face = transform.resize(face, (128,128))
+            prediction = model_age.predict(face[None,:,:,:])
+
+            age.append(prediction[0][0].tolist())
+            child.append(prediction[1][0][0].item())
+            gender.append(prediction[2][0][0].item())
+        
+
+        if test:
+            print(f"""{list(map(
+                        lambda l: sorted(
+                          enumerate(l),
+                          key= lambda x: x[1], reverse=True), 
+                        age))}""")
+            print(f"Child probability: {child}")
+            print(f"Being a woman probability: {gender}")
+
+    return age, child, gender
+
+
+
+
+
+
+def draw_rectangle(image, start, end):
+    color = (256, 0, 0)
+    thickness = 2
+    return cv2.rectangle(image, start, end, color, thickness)
+
+def get_face_imgs(img_path: str, device: torch.device, test: bool = False):
+    detector = MTCNN()
+    image = cv2.imread(img_path)
+    faces = detector.detect_faces(image)
+
+    if test:
+        for face in faces:
+            x, y, w, h = face['box']
+
+            image = draw_rectangle(image, (x,y), (x+w,y+h))
+
+        cv2.imwrite('test.jpg', image)
+    
+    return list(map(lambda x: image.copy()[face['box'][1]:face['box'][1]+face['box'][3],face['box'][0]:face['box'][0]+face['box'][2]], faces))

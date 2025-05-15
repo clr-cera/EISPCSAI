@@ -3,3 +3,4 @@ sentiment-dataset
 /models
 *.pyc
 test.jpg
+test*.jpg
