@@ -18,7 +18,8 @@ tf = compat.v1
 
 from tensorflow.python.keras import backend as K
 from skimage import transform
-from faces import get_faces_mtcnn
+
+from itamodel import SkinTone
 
 TEST_PATH = "sentiment-dataset/images/0c5ee3bd-2ac3-4d3e-9838-a4806b159c90.jpg"
 
@@ -135,6 +136,7 @@ def infer_age_gender(dataset: str, device: torch.device, test: bool = False):
     if test:
         faces: list = get_face_imgs(TEST_PATH, device, test)
         age_info = get_age_gender(faces, device, test)
+        ita_info = get_ita(faces,device, test)
     
 
 
@@ -166,19 +168,41 @@ def get_age_gender(faces: list, device: torch.device, test: bool):
         
 
         if test:
-            print(f"""{list(map(
-                        lambda l: sorted(
-                          enumerate(l),
-                          key= lambda x: x[1], reverse=True), 
-                        age))}""")
-            print(f"Child probability: {child}")
-            print(f"Being a woman probability: {gender}")
+            print(*list(
+                map(lambda l: list(
+                    map(lambda tup: f"{tup[0]} probability: {tup[1]}", l)),
+                map(lambda l: sorted(enumerate(l),key= lambda x: x[1], reverse=True), 
+                age))
+            ))
+
+            print(*list(
+                map(lambda prob: f"Probability of being a child: {prob}",child)
+            ))
+            print(*list(
+                map(lambda prob: f"Probability of being a woman: {prob}",gender)
+            ))
 
     return age, child, gender
 
+def get_ita(faces: list, device, test: bool):
+    skinModel = SkinTone("models/fitzpatrick/shape_predictor_68_face_landmarks.dat")
 
+    config = tf.ConfigProto(device_count = {'GPU': 0})
+    sess = tf.Session(config=config)
+    K.set_session(sess)
+    
+    skin_ita = []
 
-
+    with sess:
+        for face in faces:
+            ita, patch = skinModel.ITA(face)
+            skin_ita.append(ita)
+    if test:
+        print(*list(
+            map(lambda ita: f"Ita value: {ita}, Ita description: {skinModel.ita2str(ITA=ita)[0]}",skin_ita)
+        ))
+    
+    return skin_ita
 
 
 def draw_rectangle(image, start, end):
