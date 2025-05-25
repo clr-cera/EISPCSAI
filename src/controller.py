@@ -21,6 +21,11 @@ class Controller:
 
         self.test_separate()
 
+        if self.args.features_image:
+            model.feature_single.get_feature_vector(
+                self.args.features_image, self.torchdevice
+            )
+
     def test_separate(self):
         if self.args.test_object:
             model.separate.infer_objects(image=self.args.test_image)
@@ -84,6 +89,13 @@ def _parseArguments():
         "--test_image",
         help="Image to be tested by test arguments",
         dest="test_image",
+        type=str,
+        default=None,
+    )
+    parser.add_argument(
+        "--features_image",
+        help="Image to extract feature vectors and store them",
+        dest="features_image",
         type=str,
         default=None,
     )
