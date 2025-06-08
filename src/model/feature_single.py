@@ -50,7 +50,6 @@ def get_objects_vector(image):
     return feature
 
 
-# done
 def get_nsfw_vector(image):
     image = Image.open(image)
     processor = ViTImageProcessor.from_pretrained("AdamCodd/vit-base-nsfw-detector")
@@ -126,9 +125,10 @@ def get_scene_vector(image):
 
     model.forward(input_img)
     handle.remove()
-    npfeature = features[0].cpu().numpy()
-    print(npfeature.shape)
-    feature = npfeature
+    feature = features[0]
+    feature = feature.reshape((feature.shape[0], feature.shape[1], -1)).mean(dim=(2))
+    print(feature.shape)
+
     return feature
 
 
@@ -155,10 +155,14 @@ def get_age_gender_vector(faces):
             face = transform.resize(face, (128, 128))
             features.append(feature_model.predict(face[None, :, :, :]))
 
-    features = list(map(lambda x: x.flatten(), features))
+    print("AGE GENDER")
+    print(len(features))
+    print([x.shape for x in features])
+    feature = tf.stack(features, 1)
+    feature = tf.reduce_mean(feature, 1)
+    print(feature.shape)
 
-    feature_mean = np.mean(a=np.array(features), axis=0)
-    return feature_mean
+    return feature
 
 
 def get_face_imgs(img_path: str):
