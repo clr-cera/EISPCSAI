@@ -12,6 +12,7 @@ import keras
 from keras.models import model_from_json
 from tensorflow import compat as compat
 import numpy as np
+from model.itamodel import SkinTone
 
 tf = compat.v1
 
@@ -25,6 +26,7 @@ def get_feature_vector(image, device):
     scene_feature = get_scene_vector(image)
     faces = get_face_imgs(image)
     age_gender_feature = get_age_gender_vector(faces)
+    ita_feature = get_ita_vector(faces)
 
 
 def get_objects_vector(image):
@@ -160,6 +162,27 @@ def get_age_gender_vector(faces):
     print([x.shape for x in features])
     feature = tf.stack(features, 1)
     feature = tf.reduce_mean(feature, 1)
+    print(feature.shape)
+
+    return feature
+
+
+def get_ita_vector(faces: list):
+    skinModel = SkinTone("models/fitzpatrick/shape_predictor_68_face_landmarks.dat")
+
+    config = tf.ConfigProto(device_count={"GPU": 0})
+    sess = tf.Session(config=config)
+    K.set_session(sess)
+
+    skin_ita = []
+
+    with sess:
+        for face in faces:
+            ita, patch = skinModel.ITA(face)
+            skin_ita.append(ita)
+
+    print("ITA MODEL")
+    feature = np.array(skin_ita)
     print(feature.shape)
 
     return feature
