@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "dlib>=19.24.9",
+    "facenet-pytorch>=2.5.3",
     "gdown>=5.2.0",
     "imutils>=0.5.4",
     "mtcnn>=1.0.0",
@@ -18,6 +19,7 @@ dependencies = [
     "tensorflow==2.11",
     "torch>=2.0.1",
     "torchvision>=0.15.2",
+    "tqdm>=4.67.1",
     "transformers>=4.50.0",
     "ultralytics>=8.3.133",
     "wget>=3.2",

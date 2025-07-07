@@ -2,5 +2,7 @@
 sentiment-dataset
 /models
 *.pyc
-test.jpg
-test*.jpg
+*.jpg
+log.txt
+.env
+.idea

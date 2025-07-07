@@ -3,6 +3,7 @@ import torch
 
 import datasets
 import model
+import dataloader
 
 
 class Controller:
@@ -22,8 +23,18 @@ class Controller:
         self.test_separate()
 
         if self.args.features_image:
-            model.feature_single.get_feature_vector(
+            model.feature_separate.get_feature_vector(
                 self.args.features_image, self.torchdevice
+            )
+
+        if self.args.sentiment_dataset_feature:
+            sentiment_dataloader = dataloader.get_sentiment_dataloader(
+                batch_size=32, shuffle=False
+            )
+            model.feature_multiple.get_feature_vector(
+                sentiment_dataloader,
+                path_to_store="features/sentiment",
+                torch_device=self.torchdevice,
             )
 
     def test_separate(self):
@@ -98,5 +109,11 @@ def _parseArguments():
         dest="features_image",
         type=str,
         default=None,
+    )
+    parser.add_argument(
+        "--sentiment-dataset-feature"
+        "When this option is set the sentiment dataset will be used to extract feature vectors",
+        dest="sentiment_dataset_feature",
+        action="store_true",
     )
     return parser.parse_args()

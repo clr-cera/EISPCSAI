@@ -19,6 +19,8 @@ tf = compat.v1
 from tensorflow.python.keras import backend as K
 from skimage import transform
 
+import logging
+
 
 def get_feature_vector(image, device):
     object_feature = get_objects_vector(image)
@@ -31,15 +33,14 @@ def get_feature_vector(image, device):
 
 def get_objects_vector(image):
     model = YOLO("models/objects/yolov11.pt", verbose=False)
-    layer = model.model.model[-2].m
+    layer = model.model.model[8]
     hook_handles = []
     features = []
 
     def hook(_, __, output):
         features.append(output.detach())
 
-    for block in layer:
-        hook_handles.append(block.cv3.register_forward_hook(hook))
+    hook_handles.append(layer.register_forward_hook(hook))
 
     model(image)
 
@@ -72,6 +73,7 @@ def get_nsfw_vector(image):
     handle.remove()
     print("NSFW")
     feature = features[0][:, 0, :]
+    feature = feature.numpy()
     print(feature.shape)
     return feature
 
@@ -154,15 +156,18 @@ def get_age_gender_vector(faces):
         )
 
         for face in faces:
+            if face.shape[0] == 3:
+                face = face.transpose((1, 2, 0))
             face = transform.resize(face, (128, 128))
             features.append(feature_model.predict(face[None, :, :, :]))
 
-    print("AGE GENDER")
-    print(len(features))
-    print([x.shape for x in features])
-    feature = tf.stack(features, 1)
-    feature = tf.reduce_mean(feature, 1)
-    print(feature.shape)
+    # logging.info("AGE GENDER")
+    if len(features) == 0:
+        # logging.info("No faces detected, returning zero vector")
+        return np.zeros((1, 4096))
+    # logging.info(len(features))
+    feature = np.concatenate(features, axis=0)
+    feature = np.mean(feature, axis=0, keepdims=True)
 
     return feature
 
@@ -178,12 +183,19 @@ def get_ita_vector(faces: list):
 
     with sess:
         for face in faces:
+            if face.shape[0] == 3:
+                face = face.transpose((1, 2, 0))
             ita, patch = skinModel.ITA(face)
             skin_ita.append(ita)
 
-    print("ITA MODEL")
+    # logging.info("ITA MODEL")
+    if len(faces) == 0:
+        # logging.info("No faces detected, returning zero value")
+        return np.zeros((1, 1))
     feature = np.array(skin_ita)
-    print(feature.shape)
+    feature = feature.mean()
+    feature = feature.reshape((1, 1))
+    # logging.info(feature)
 
     return feature
 
