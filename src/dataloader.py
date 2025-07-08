@@ -25,6 +25,8 @@ class SentimentDataset(Dataset):
     def __getitem__(self, idx):
         img_path = os.path.join(self.img_dir, self.img_labels.iloc[idx, 1])
         image = decode_image(img_path)
+        if image.shape[0] == 1:  # If grayscale, convert to RGB
+            image = image.repeat(3, 1, 1)
         label = self.img_labels.iloc[idx, 2:]
         label = np.array(label, dtype=np.float32)
         if image.shape[0] == 4:
