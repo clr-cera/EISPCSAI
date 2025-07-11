@@ -36,6 +36,11 @@ class Controller:
                 path_to_store="features/sentiment",
                 torch_device=self.torchdevice,
             )
+        if self.args.train_ensemble_sentiment:
+            model.ensemble.train_ensemble_sentiment(
+                path_to_features="features/sentiment.npy",
+                path_to_labels="sentiment-dataset/annotations.csv",
+            )
 
     def test_separate(self):
         if self.args.test_object:
@@ -114,6 +119,12 @@ def _parseArguments():
         "--sentiment-dataset-feature"
         "When this option is set the sentiment dataset will be used to extract feature vectors",
         dest="sentiment_dataset_feature",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--train_ensemble_sentiment",
+        help="When this option is set the sentiment dataset will be used to train ensemble model",
+        dest="train_ensemble_sentiment",
         action="store_true",
     )
     return parser.parse_args()

@@ -6,3 +6,4 @@ sentiment-dataset
 log.txt
 .env
 .idea
+features/
