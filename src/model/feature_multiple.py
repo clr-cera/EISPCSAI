@@ -52,6 +52,7 @@ def get_faces_vector(batch):
         batch_face_vector.append(face_vector)
     batch_face_vector = np.array(batch_face_vector).squeeze()
     logging.info("AgeGender and Ita feature processed")
+    logging.info(f"Batch face vector shape: {batch_face_vector.shape}")
     # logging.info(f"Batch face vector shape: {batch_face_vector.shape}")
     return batch_face_vector
 
@@ -92,6 +93,7 @@ def get_objects_vector(batch):
     feature = feature.reshape((feature.shape[0], feature.shape[1], -1)).mean(dim=(2))
     # logging.info(feature.shape)
     feature = feature.cpu().numpy()
+    logging.info(f"Object feature shape: {feature.shape}")
     return feature
 
 
@@ -117,6 +119,7 @@ def get_nsfw_vector(batch, device=None):
     logging.info("NSFW feature processed")
     feature = features[0][:, 0, :]
     feature = feature.cpu().numpy()
+    logging.info(f"NSFW feature shape: {feature.shape}")
     return feature
 
 
@@ -174,6 +177,6 @@ def get_scene_vector(batch):
         feature = feature.squeeze()
     feature = feature.reshape((feature.shape[0], feature.shape[1], -1))
     feature = feature.mean(axis=(2))
-    # logging.info(feature.shape)
+    logging.info(feature.shape)
 
     return feature

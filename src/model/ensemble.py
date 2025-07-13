@@ -36,6 +36,8 @@ def train_ensemble_sentiment(path_to_features, path_to_labels):
         "num_class": 9,
         "device": "cuda" if torch.cuda.is_available() else "cpu",
         "verbosity": 3,
+        "max_depth": 7,
+        "eta": 0.1,
     }
 
     # Train the model
