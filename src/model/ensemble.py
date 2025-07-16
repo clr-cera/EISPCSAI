@@ -1,5 +1,6 @@
 import logging
 from matplotlib import pyplot as plt
+import sklearn
 import xgboost as xgb
 import torch
 import pandas as pd
@@ -11,25 +12,24 @@ import shap
 
 def train_ensemble_sentiment(path_to_features, path_to_labels):
     data = [
-        train_first_question(path_to_features, path_to_labels),
-        train_second_question(path_to_features, path_to_labels),
+        train_numeric_question(path_to_features, path_to_labels, 1),
+        train_numeric_question(path_to_features, path_to_labels, 2),
+        train_multi_option_question(path_to_features, path_to_labels, 3),
+        train_multi_option_question(path_to_features, path_to_labels, 4),
+        train_multi_option_question(path_to_features, path_to_labels, 5),
     ]
 
-    save_data(data, "resultsq1.csv")
+    save_data(data, "results/results.csv")
 
 
-def train_first_question(path_to_features, path_to_labels):
+def train_numeric_question(path_to_features, path_to_labels, question_number):
     # Load features and labels
     X = np.load(path_to_features)
 
     # Average all Q1 labels
     dfy = pd.read_csv(path_to_labels, sep=";")
-    col_idxs = [2 + 26 * i for i in range(5)]
+    col_idxs = [(question_number+1) + 26 * i for i in range(5)]
     y = dfy.iloc[:, col_idxs].mean(axis=1).values
-    y = np.round(y)
-
-    # 0 indexing
-    y = y - 1
 
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=123
@@ -46,9 +46,8 @@ def train_first_question(path_to_features, path_to_labels):
     # Set parameters for XGBoost
     params = {
         "tree_method": "hist",
-        "objective": "multi:softprob",
-        "eval_metric": "mlogloss",
-        "num_class": 9,
+        "objective": "reg:squarederror",
+        "eval_metric": "rmse",
         "device": "cuda" if torch.cuda.is_available() else "cpu",
         "verbosity": 3,
         "max_depth": 7,
@@ -58,39 +57,31 @@ def train_first_question(path_to_features, path_to_labels):
     # Train the model
     bst = xgb.train(params, dtrain, num_boost_round=128)
 
-    # Uncomment the following lines to load the model from a file
-
     X_test = xgb.DMatrix(X_test)
     predictions = bst.predict(X_test)
-    predicted_classes = predictions.argmax(axis=1)
 
-    acc = accuracy_score(y_test, predicted_classes)
-    logging.info(f"Accuracy: {acc * 100:.2f}%")
-
-    save_confusion_matrix(y_test, predicted_classes, "confusion_matrix_q1.png")
+    mse = sklearn.metrics.mean_squared_error(y_test, predictions)
+    logging.info(f"Mse: {mse}")
 
     explainer = shap.TreeExplainer(bst)
     shap_values = explainer.shap_values(X_train)
     age_gender_shap, ita_shap, objects_shap, nsfw_shap, scene_shap = save_shap_plot(
-        shap_values, acc, "shap_plot_q1.png"
+        shap_values, mse, f"shap_plot_q{question_number}_reg.png"
     )
 
-    bst.save_model("models/ensemble/ensemble_sentiment_q1.json")
-    return acc, age_gender_shap, ita_shap, objects_shap, nsfw_shap, scene_shap
+    bst.save_model(f"models/ensemble/ensemble_sentiment_q{question_number}.json")
+    return mse, age_gender_shap, ita_shap, objects_shap, nsfw_shap, scene_shap
 
-
-def train_second_question(path_to_features, path_to_labels):
-    # Load features and labels
+def train_multi_option_question(path_to_features, path_to_labels, question_number):
     X = np.load(path_to_features)
 
-    # Average all Q1 labels
     dfy = pd.read_csv(path_to_labels, sep=";")
-    col_idxs = [3 + 26 * i for i in range(5)]
-    y = dfy.iloc[:, col_idxs].mean(axis=1).values
-    y = np.round(y)
-
-    # 0 indexing
-    y = y - 1
+    columns = [c for c in dfy.columns if f'.Q{question_number}.' in c]
+    grouped = dfy[columns].copy()
+    grouped.columns = ["".join(col.split('.')[1:]) for col in columns]
+    mean_by_answer = grouped.T.groupby(by=grouped.columns).mean().T
+    y = mean_by_answer.values
+    y = np.round(y).astype(int)
 
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=123
@@ -107,9 +98,7 @@ def train_second_question(path_to_features, path_to_labels):
     # Set parameters for XGBoost
     params = {
         "tree_method": "hist",
-        "objective": "multi:softprob",
-        "eval_metric": "mlogloss",
-        "num_class": 9,
+        "objective": "binary:logistic",
         "device": "cuda" if torch.cuda.is_available() else "cpu",
         "verbosity": 3,
         "max_depth": 7,
@@ -123,33 +112,43 @@ def train_second_question(path_to_features, path_to_labels):
 
     X_test = xgb.DMatrix(X_test)
     predictions = bst.predict(X_test)
-    predicted_classes = predictions.argmax(axis=1)
+    predicted_classes = np.round(predictions)
 
-    acc = accuracy_score(y_test, predicted_classes)
-    logging.info(f"Accuracy: {acc * 100:.2f}%")
+    acc = []
 
-    save_confusion_matrix(y_test, predicted_classes, "confusion_matrix_q2.png")
+    for i in range(y_test.shape[1]):
+        acc.append(accuracy_score(y_test[:, i], predicted_classes[:, i]))
+
+    acc = np.array(acc)
+    logging.info(f"Acc Q{question_number}: {acc}")
 
     explainer = shap.TreeExplainer(bst)
     shap_values = explainer.shap_values(X_train)
-    age_gender_shap, ita_shap, objects_shap, nsfw_shap, scene_shap = save_shap_plot(
-        shap_values, acc, "shap_plot_q2.png"
-    )
+    logging.info(f"SHAP values shape: {shap_values.shape}")
 
-    bst.save_model("models/ensemble/ensemble_sentiment_q2.json")
-    return acc, age_gender_shap, ita_shap, objects_shap, nsfw_shap, scene_shap
+    shap_data = []
+    for i in range(shap_values.shape[2]):
+        logging.info(f"SHAP values for Q{question_number}.{i}: {shap_values[:, :, i].shape}")
+        age_gender_shap, ita_shap, objects_shap, nsfw_shap, scene_shap = save_shap_plot(
+            shap_values[:, :, i], acc[i], f"shap_plot_q{question_number}.{i}.png"
+        )
+        shap_data.append((age_gender_shap, ita_shap, objects_shap, nsfw_shap, scene_shap))
+
+    age_gender_shap, ita_shap, objects_shap, nsfw_shap, scene_shap = np.mean(shap_data, axis=0)
+    bst.save_model(f"models/ensemble/ensemble_sentiment_q{question_number}.json")
+    return acc.mean(), age_gender_shap, ita_shap, objects_shap, nsfw_shap, scene_shap
 
 
 def save_confusion_matrix(y_test, predicted_classes, img_name="confusion_matrix.png"):
     cm = confusion_matrix(y_test, predicted_classes)
     disp = ConfusionMatrixDisplay(confusion_matrix=cm)
-    disp.plot().figure_.savefig(img_name)
+    disp.plot().figure_.savefig(f"results/{img_name}")
     plt.clf()
 
-    logging.info(f"Confusion matrix saved to {img_name}")
+    logging.info(f"Confusion matrix saved to results/{img_name}")
 
 
-def save_shap_plot(shap_values, acc, img_name="shap_plot.png"):
+def save_shap_plot(shap_values, metric, img_name="shap_plot.png"):
     age_gender_shap = np.sum(shap_values[:, :4096], axis=1)
     ita_shap = np.sum(shap_values[:, 4096:4097], axis=1)
     objects_shap = np.sum(shap_values[:, 4097 : 4097 + 768], axis=1)
@@ -177,10 +176,10 @@ def save_shap_plot(shap_values, acc, img_name="shap_plot.png"):
             scene_shap_mean,
         ],
     )
-    plt.title(f"SHAP Feature Importance, acc= {acc * 100:.1f}%")
-    plt.savefig(img_name, dpi=300, bbox_inches="tight")
+    plt.title(f"SHAP Feature Importance, metric= {metric:.2f}")
+    plt.savefig(f"results/{img_name}", dpi=300, bbox_inches="tight")
     plt.clf()
-    logging.info(f"SHAP plot saved to {img_name}")
+    logging.info(f"SHAP plot saved to results/{img_name}")
     return (
         age_gender_shap_mean,
         ita_shap_mean,
@@ -192,7 +191,7 @@ def save_shap_plot(shap_values, acc, img_name="shap_plot.png"):
 
 def save_data(data, filename):
     df = pd.DataFrame(
-        data, columns=["Accuracy", "Age Gender", "Ita", "Objects", "NSFW", "Scene"]
+        data, columns=["Metric", "Age Gender", "Ita", "Objects", "NSFW", "Scene"]
     )
     df.to_csv(filename, index=True)
     logging.info(f"Data saved to {filename}")
