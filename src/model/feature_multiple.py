@@ -34,7 +34,7 @@ def get_feature_vector(dataloader, path_to_store=None, torch_device=None):
             arr = batch_arr
         else:
             arr = np.concatenate((arr, batch_arr), axis=0)
-        logging.info(f"Batch {iteration} processed, images processed: {arr.shape[0]}")
+        logging.info(f"Batch {iteration} processed, images processed: {arr.shape[0]}, feature size: {arr.shape[1]}")
 
     np.save(path_to_store, arr)
     logging.info(f"Features saved to {path_to_store}")
