@@ -65,12 +65,12 @@ def train_numeric_question(path_to_features, path_to_labels, question_number):
 
     explainer = shap.TreeExplainer(bst)
     shap_values = explainer.shap_values(X_train)
-    age_gender_shap, ita_shap, objects_shap, nsfw_shap, scene_shap = save_shap_plot(
+    age_gender_shap, ita_shap, objects_shap, nsfw_shap, scene_shap, thamiris_scene_shap = save_shap_plot(
         shap_values, mse, f"shap_plot_q{question_number}_reg.png"
     )
 
     bst.save_model(f"models/ensemble/ensemble_sentiment_q{question_number}.json")
-    return mse, age_gender_shap, ita_shap, objects_shap, nsfw_shap, scene_shap
+    return mse, age_gender_shap, ita_shap, objects_shap, nsfw_shap, scene_shap, thamiris_scene_shap
 
 def train_multi_option_question(path_to_features, path_to_labels, question_number):
     X = np.load(path_to_features)
@@ -134,9 +134,9 @@ def train_multi_option_question(path_to_features, path_to_labels, question_numbe
         )
         shap_data.append((age_gender_shap, ita_shap, objects_shap, nsfw_shap, scene_shap))
 
-    age_gender_shap, ita_shap, objects_shap, nsfw_shap, scene_shap = np.mean(shap_data, axis=0)
+    age_gender_shap, ita_shap, objects_shap, nsfw_shap, scene_shap, thamiris_scene_shap = np.mean(shap_data, axis=0)
     bst.save_model(f"models/ensemble/ensemble_sentiment_q{question_number}.json")
-    return acc.mean(), age_gender_shap, ita_shap, objects_shap, nsfw_shap, scene_shap
+    return acc.mean(), age_gender_shap, ita_shap, objects_shap, nsfw_shap, scene_shap, thamiris_scene_shap
 
 
 def save_confusion_matrix(y_test, predicted_classes, img_name="confusion_matrix.png"):
@@ -154,26 +154,30 @@ def save_shap_plot(shap_values, metric, img_name="shap_plot.png"):
     objects_shap = np.sum(shap_values[:, 4097 : 4097 + 768], axis=1)
     nsfw_shap = np.sum(shap_values[:, 4097 + 768 : 4097 + 768 + 768], axis=1)
     scene_shap = np.sum(shap_values[:, 4097 + 768 + 768 :], axis=1)
+    thamiris_scene_shap = np.sum(shap_values[:, 4097 + 768 + 768 + 256 :], axis=1)
 
     age_gender_shap_mean = np.abs(np.mean(age_gender_shap))
     ita_shap_mean = np.abs(np.mean(ita_shap))
     objects_shap_mean = np.abs(np.mean(objects_shap))
     nsfw_shap_mean = np.abs(np.mean(nsfw_shap))
     scene_shap_mean = np.abs(np.mean(scene_shap))
+    thamiris_scene_shap_mean = np.abs(np.mean(thamiris_scene_shap))
 
     logging.info(f"Age Gender importance: {age_gender_shap_mean}")
     logging.info(f"Ita importance: {ita_shap_mean}")
     logging.info(f"Objects importance: {objects_shap_mean}")
     logging.info(f"NSFW importance: {nsfw_shap_mean}")
     logging.info(f"Scene importance: {scene_shap_mean}")
+    logging.info(f"Thamiris Scene importance: {thamiris_scene_shap_mean}")
     plt.bar(
-        ["Age Gender", "Ita", "Objects", "NSFW", "Scene"],
+        ["Age Gender", "Ita", "Objects", "NSFW", "Scene", "Thamiris Scene"],
         [
             age_gender_shap_mean,
             ita_shap_mean,
             objects_shap_mean,
             nsfw_shap_mean,
             scene_shap_mean,
+            thamiris_scene_shap_mean,
         ],
     )
     plt.title(f"SHAP Feature Importance, metric= {metric:.2f}")
@@ -186,12 +190,13 @@ def save_shap_plot(shap_values, metric, img_name="shap_plot.png"):
         objects_shap_mean,
         nsfw_shap_mean,
         scene_shap_mean,
+        thamiris_scene_shap_mean
     )
 
 
 def save_data(data, filename):
     df = pd.DataFrame(
-        data, columns=["Metric", "Age Gender", "Ita", "Objects", "NSFW", "Scene"]
+        data, columns=["Metric", "Age Gender", "Ita", "Objects", "NSFW", "Scene", "Thamiris Scene"]
     )
     df.to_csv(filename, index=True)
     logging.info(f"Data saved to {filename}")
