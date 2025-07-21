@@ -9,6 +9,7 @@ import torch
 from torch.autograd import Variable as V
 from PIL import Image
 from tqdm import tqdm
+from .thamirismodel import vit_small
 
 from model.feature_separate import get_age_gender_vector, get_ita_vector
 
@@ -25,6 +26,7 @@ def get_feature_vector(dataloader, path_to_store=None, torch_device=None):
                 get_objects_vector(batch_images),
                 get_nsfw_vector(batch_images, device=torch_device),
                 get_scene_vector(batch_images),
+                get_scene_thamiris_vector(batch_images, device=torch_device),
             ),
             axis=1,
         )
@@ -180,3 +182,17 @@ def get_scene_vector(batch):
     logging.info(feature.shape)
 
     return feature
+
+def get_scene_thamiris_vector(batch, device):
+        model = vit_small(patch_size=16)
+        state_dict = torch.load("models/scenes_thamiris/thamiris_FSL_places600_best.pth", map_location=device)
+        model.load_state_dict(state_dict, strict=False)
+        model.to(device)
+
+        batch = batch.float() / 255.0  # Normalize the batch
+        batch = batch.to(device)
+        with torch.no_grad():
+            feature = model(batch)
+        logging.info("Scene Classification with Thamiris Few Shot Model feature processed")
+        logging.info(feature.shape)
+        feature = feature.cpu().numpy()
