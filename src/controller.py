@@ -40,7 +40,20 @@ class Controller:
             model.ensemble.train_ensemble_sentiment(
                 path_to_features="features/sentiment.npy",
                 path_to_labels="sentiment-dataset/annotations.csv",
+                feature_sizes=[4096, 1, 768, 768, 256, 384],
             )
+        if self.args.train_ensemble_sentiment_pca:
+            model.ensemble.train_ensemble_sentiment(
+                path_to_features="features/pca_features.npy",
+                path_to_labels="sentiment-dataset/annotations.csv",
+                feature_sizes=[256, 1, 256, 256, 256, 256],
+            )
+        if self.args.sentiment_features_pca:
+            model.process_features.process_pca_features(
+                path_to_features="features/sentiment.npy"
+            )
+        if self.args.generate_tsne:
+            model.process_features.generate_tsne(perplexity=200)
 
     def test_separate(self):
         if self.args.test_object:
@@ -125,6 +138,24 @@ def _parseArguments():
         "--train_ensemble_sentiment",
         help="When this option is set the sentiment dataset will be used to train ensemble model",
         dest="train_ensemble_sentiment",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--process_pca_sentiment",
+        help="When this option is set the features extracted from sentiment dataset are going to be processed with PCA",
+        dest="sentiment_features_pca",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--train_ensemble_sentiment_pca",
+        help="When this option is set the sentiment dataset processed with pca will be used to train ensemble model",
+        dest="train_ensemble_sentiment_pca",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--generate_tsne",
+        help="When this option is set the sentiment dataset processed with pca will be used to generate tsne features",
+        dest="generate_tsne",
         action="store_true",
     )
     return parser.parse_args()

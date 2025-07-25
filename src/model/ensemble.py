@@ -10,25 +10,29 @@ from sklearn.metrics import accuracy_score, confusion_matrix, ConfusionMatrixDis
 import shap
 
 
-def train_ensemble_sentiment(path_to_features, path_to_labels):
+def train_ensemble_sentiment(
+    path_to_features, path_to_labels, feature_sizes=[4096, 1, 768, 768, 256, 384]
+):
     data = [
-        train_numeric_question(path_to_features, path_to_labels, 1),
-        train_numeric_question(path_to_features, path_to_labels, 2),
-        train_multi_option_question(path_to_features, path_to_labels, 3),
-        train_multi_option_question(path_to_features, path_to_labels, 4),
-        train_multi_option_question(path_to_features, path_to_labels, 5),
+        train_numeric_question(path_to_features, path_to_labels, 1, feature_sizes),
+        train_numeric_question(path_to_features, path_to_labels, 2, feature_sizes),
+        train_multi_option_question(path_to_features, path_to_labels, 3, feature_sizes),
+        train_multi_option_question(path_to_features, path_to_labels, 4, feature_sizes),
+        train_multi_option_question(path_to_features, path_to_labels, 5, feature_sizes),
     ]
 
     save_data(data, "results/results.csv")
 
 
-def train_numeric_question(path_to_features, path_to_labels, question_number):
+def train_numeric_question(
+    path_to_features, path_to_labels, question_number, feature_sizes
+):
     # Load features and labels
     X = np.load(path_to_features)
 
     # Average all Q1 labels
     dfy = pd.read_csv(path_to_labels, sep=";")
-    col_idxs = [(question_number+1) + 26 * i for i in range(5)]
+    col_idxs = [(question_number + 1) + 26 * i for i in range(5)]
     y = dfy.iloc[:, col_idxs].mean(axis=1).values
 
     X_train, X_test, y_train, y_test = train_test_split(
@@ -65,20 +69,38 @@ def train_numeric_question(path_to_features, path_to_labels, question_number):
 
     explainer = shap.TreeExplainer(bst)
     shap_values = explainer.shap_values(X_train)
-    age_gender_shap, ita_shap, objects_shap, nsfw_shap, scene_shap, thamiris_scene_shap = save_shap_plot(
-        shap_values, mse, f"shap_plot_q{question_number}_reg.png"
+    (
+        age_gender_shap,
+        ita_shap,
+        objects_shap,
+        nsfw_shap,
+        scene_shap,
+        thamiris_scene_shap,
+    ) = save_shap_plot(
+        shap_values, mse, feature_sizes, f"shap_plot_q{question_number}_reg.png"
     )
 
     bst.save_model(f"models/ensemble/ensemble_sentiment_q{question_number}.json")
-    return mse, age_gender_shap, ita_shap, objects_shap, nsfw_shap, scene_shap, thamiris_scene_shap
+    return (
+        mse,
+        age_gender_shap,
+        ita_shap,
+        objects_shap,
+        nsfw_shap,
+        scene_shap,
+        thamiris_scene_shap,
+    )
 
-def train_multi_option_question(path_to_features, path_to_labels, question_number):
+
+def train_multi_option_question(
+    path_to_features, path_to_labels, question_number, feature_sizes
+):
     X = np.load(path_to_features)
 
     dfy = pd.read_csv(path_to_labels, sep=";")
-    columns = [c for c in dfy.columns if f'.Q{question_number}.' in c]
+    columns = [c for c in dfy.columns if f".Q{question_number}." in c]
     grouped = dfy[columns].copy()
-    grouped.columns = ["".join(col.split('.')[1:]) for col in columns]
+    grouped.columns = ["".join(col.split(".")[1:]) for col in columns]
     mean_by_answer = grouped.T.groupby(by=grouped.columns).mean().T
     y = mean_by_answer.values
     y = np.round(y).astype(int)
@@ -128,15 +150,51 @@ def train_multi_option_question(path_to_features, path_to_labels, question_numbe
 
     shap_data = []
     for i in range(shap_values.shape[2]):
-        logging.info(f"SHAP values for Q{question_number}.{i}: {shap_values[:, :, i].shape}")
-        age_gender_shap, ita_shap, objects_shap, nsfw_shap, scene_shap = save_shap_plot(
-            shap_values[:, :, i], acc[i], f"shap_plot_q{question_number}.{i}.png"
+        logging.info(
+            f"SHAP values for Q{question_number}.{i}: {shap_values[:, :, i].shape}"
         )
-        shap_data.append((age_gender_shap, ita_shap, objects_shap, nsfw_shap, scene_shap))
+        (
+            age_gender_shap,
+            ita_shap,
+            objects_shap,
+            nsfw_shap,
+            scene_shap,
+            thamiris_scene_shap,
+        ) = save_shap_plot(
+            shap_values[:, :, i],
+            acc[i],
+            feature_sizes,
+            f"shap_plot_q{question_number}.{i}.png",
+        )
+        shap_data.append(
+            (
+                age_gender_shap,
+                ita_shap,
+                objects_shap,
+                nsfw_shap,
+                scene_shap,
+                thamiris_scene_shap,
+            )
+        )
 
-    age_gender_shap, ita_shap, objects_shap, nsfw_shap, scene_shap, thamiris_scene_shap = np.mean(shap_data, axis=0)
+    (
+        age_gender_shap,
+        ita_shap,
+        objects_shap,
+        nsfw_shap,
+        scene_shap,
+        thamiris_scene_shap,
+    ) = np.mean(shap_data, axis=0)
     bst.save_model(f"models/ensemble/ensemble_sentiment_q{question_number}.json")
-    return acc.mean(), age_gender_shap, ita_shap, objects_shap, nsfw_shap, scene_shap, thamiris_scene_shap
+    return (
+        acc.mean(),
+        age_gender_shap,
+        ita_shap,
+        objects_shap,
+        nsfw_shap,
+        scene_shap,
+        thamiris_scene_shap,
+    )
 
 
 def save_confusion_matrix(y_test, predicted_classes, img_name="confusion_matrix.png"):
@@ -148,13 +206,63 @@ def save_confusion_matrix(y_test, predicted_classes, img_name="confusion_matrix.
     logging.info(f"Confusion matrix saved to results/{img_name}")
 
 
-def save_shap_plot(shap_values, metric, img_name="shap_plot.png"):
-    age_gender_shap = np.sum(shap_values[:, :4096], axis=1)
-    ita_shap = np.sum(shap_values[:, 4096:4097], axis=1)
-    objects_shap = np.sum(shap_values[:, 4097 : 4097 + 768], axis=1)
-    nsfw_shap = np.sum(shap_values[:, 4097 + 768 : 4097 + 768 + 768], axis=1)
-    scene_shap = np.sum(shap_values[:, 4097 + 768 + 768 :], axis=1)
-    thamiris_scene_shap = np.sum(shap_values[:, 4097 + 768 + 768 + 256 :], axis=1)
+def save_shap_plot(
+    shap_values,
+    metric,
+    feature_sizes: list[int],
+    img_name="shap_plot.png",
+):
+    age_gender_shap = np.sum(shap_values[:, : feature_sizes[0]], axis=1)
+    ita_shap = np.sum(
+        shap_values[:, feature_sizes[0] : feature_sizes[0] + feature_sizes[1]], axis=1
+    )
+    objects_shap = np.sum(
+        shap_values[
+            :,
+            feature_sizes[0]
+            + feature_sizes[1] : feature_sizes[0]
+            + feature_sizes[1]
+            + feature_sizes[2],
+        ],
+        axis=1,
+    )
+    nsfw_shap = np.sum(
+        shap_values[
+            :,
+            feature_sizes[0]
+            + feature_sizes[1]
+            + feature_sizes[2] : feature_sizes[0]
+            + feature_sizes[1]
+            + feature_sizes[2]
+            + feature_sizes[3],
+        ],
+        axis=1,
+    )
+    scene_shap = np.sum(
+        shap_values[
+            :,
+            feature_sizes[0]
+            + feature_sizes[1]
+            + feature_sizes[2]
+            + feature_sizes[3] : feature_sizes[0]
+            + feature_sizes[1]
+            + feature_sizes[2]
+            + feature_sizes[3]
+            + feature_sizes[4],
+        ],
+        axis=1,
+    )
+    thamiris_scene_shap = np.sum(
+        shap_values[
+            :,
+            feature_sizes[0]
+            + feature_sizes[1]
+            + feature_sizes[2]
+            + feature_sizes[3]
+            + feature_sizes[4] :,
+        ],
+        axis=1,
+    )
 
     age_gender_shap_mean = np.abs(np.mean(age_gender_shap))
     ita_shap_mean = np.abs(np.mean(ita_shap))
@@ -190,13 +298,22 @@ def save_shap_plot(shap_values, metric, img_name="shap_plot.png"):
         objects_shap_mean,
         nsfw_shap_mean,
         scene_shap_mean,
-        thamiris_scene_shap_mean
+        thamiris_scene_shap_mean,
     )
 
 
 def save_data(data, filename):
     df = pd.DataFrame(
-        data, columns=["Metric", "Age Gender", "Ita", "Objects", "NSFW", "Scene", "Thamiris Scene"]
+        data,
+        columns=[
+            "Metric",
+            "Age Gender",
+            "Ita",
+            "Objects",
+            "NSFW",
+            "Scene",
+            "Thamiris Scene",
+        ],
     )
     df.to_csv(filename, index=True)
     logging.info(f"Data saved to {filename}")
