@@ -24,6 +24,7 @@ dependencies = [
     "tqdm>=4.67.1",
     "transformers>=4.50.0",
     "ultralytics>=8.3.133",
+    "umap-learn>=0.5.9.post2",
     "wget>=3.2",
     "xgboost>=2.1.4",
 ]

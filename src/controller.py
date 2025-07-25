@@ -53,7 +53,10 @@ class Controller:
                 path_to_features="features/sentiment.npy"
             )
         if self.args.generate_tsne:
-            model.process_features.generate_tsne(perplexity=200)
+            model.process_features.generate_tsne(perplexity=500)
+
+        if self.args.generate_umap:
+            model.process_features.generate_umap(n_neighbors=50, min_dist=0.1)
 
     def test_separate(self):
         if self.args.test_object:
@@ -156,6 +159,12 @@ def _parseArguments():
         "--generate_tsne",
         help="When this option is set the sentiment dataset processed with pca will be used to generate tsne features",
         dest="generate_tsne",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--generate_umap",
+        help="When this option is set the sentiment dataset processed with pca will be used to generate umap features",
+        dest="generate_umap",
         action="store_true",
     )
     return parser.parse_args()

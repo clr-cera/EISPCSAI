@@ -3,6 +3,8 @@ import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 from matplotlib import pyplot as plt
+import pandas as pd
+import umap
 
 
 def process_pca_features(path_to_features: str, n_components=256):
@@ -137,8 +139,11 @@ def get_pca_variance(pca_model_list: list[PCA]):
     return [pca.explained_variance_ratio_.sum() for pca in pca_model_list]
 
 
-def generate_tsne(perplexity, random_state=42):
+def generate_tsne(
+    perplexity, random_state=42, path_to_labels="sentiment-dataset/annotations.csv"
+):
     pca_features = np.load("features/pca_features.npy")
+    logging.info(f"PCA features shape: {pca_features.shape}")
     tsne_model = TSNE(
         n_components=2,
         perplexity=perplexity,
@@ -150,9 +155,70 @@ def generate_tsne(perplexity, random_state=42):
     logging.info("KL divergence: " + str(tsne_model.kl_divergence_))
     logging.info("TSNE features saved to features/tsne_features.npy")
 
-    plt.scatter(tsne_features[:, 0], tsne_features[:, 1], s=1)
-    plt.title("TSNE Features")
-    plt.savefig("results/tsne_features.png")
-    logging.info("TSNE features plot saved to results/tsne_features.png")
+    for question_number in range(1, 6):
+        dfy = pd.read_csv(path_to_labels, sep=";")
+        columns = [c for c in dfy.columns if f"Q{question_number}" in c]
+        grouped = dfy[columns].copy()
+        grouped.columns = ["".join(col.split(".")[1:]) for col in columns]
+        mean_by_answer = grouped.T.groupby(by=grouped.columns).mean().T
+        y = mean_by_answer.values
+        y = np.round(y).astype(int)
+
+        for option, label in enumerate(y.T):
+            plt.scatter(
+                tsne_features[:, 0], tsne_features[:, 1], s=1, c=label, cmap="viridis"
+            )
+            plt.title(
+                "TSNE Features, question "
+                + str(question_number)
+                + ", option "
+                + str(option)
+            )
+            plt.savefig(f"results/tsne/tsne_features_Q{question_number}.{option}.png")
+            logging.info(
+                f"TSNE features plot saved to results/tsne/tsne_features_Q{question_number}.{option}.png"
+            )
 
     return tsne_features
+
+
+def generate_umap(
+    n_neighbors, min_dist, path_to_labels="sentiment-dataset/annotations.csv"
+):
+    pca_features = np.load("features/pca_features.npy")
+    logging.info(f"PCA features shape: {pca_features.shape}")
+    umap_model = umap.UMAP(
+        n_components=2,
+        n_neighbors=n_neighbors,
+        min_dist=min_dist,
+    )
+    umap_features = umap_model.fit_transform(pca_features)
+    np.save("features/umap_features.npy", umap_features)
+    logging.info(f"UMAP features shape: {umap_features.shape}")
+    logging.info("UMAP features saved to features/umap_features.npy")
+
+    for question_number in range(1, 6):
+        dfy = pd.read_csv(path_to_labels, sep=";")
+        columns = [c for c in dfy.columns if f"Q{question_number}" in c]
+        grouped = dfy[columns].copy()
+        grouped.columns = ["".join(col.split(".")[1:]) for col in columns]
+        mean_by_answer = grouped.T.groupby(by=grouped.columns).mean().T
+        y = mean_by_answer.values
+        y = np.round(y).astype(int)
+
+        for option, label in enumerate(y.T):
+            plt.scatter(
+                umap_features[:, 0], umap_features[:, 1], s=1, c=label, cmap="viridis"
+            )
+            plt.title(
+                "UMAP Features, question "
+                + str(question_number)
+                + ", option "
+                + str(option)
+            )
+            plt.savefig(f"results/umap/umap_features_Q{question_number}.{option}.png")
+            logging.info(
+                f"UMAP features plot saved to results/umap/umap_features_Q{question_number}.{option}.png"
+            )
+
+    return umap_features

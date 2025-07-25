@@ -34,7 +34,9 @@ def get_feature_vector(dataloader, path_to_store=None, torch_device=None):
             arr = batch_arr
         else:
             arr = np.concatenate((arr, batch_arr), axis=0)
-        logging.info(f"Batch {iteration} processed, images processed: {arr.shape[0]}, feature size: {arr.shape[1]}")
+        logging.info(
+            f"Batch {iteration} processed, images processed: {arr.shape[0]}, feature size: {arr.shape[1]}"
+        )
 
     np.save(path_to_store, arr)
     logging.info(f"Features saved to {path_to_store}")
@@ -93,7 +95,6 @@ def get_objects_vector(batch):
     logging.info("Object detection feature processed")
     feature = features[-1]
     feature = feature.reshape((feature.shape[0], feature.shape[1], -1)).mean(dim=(2))
-    # logging.info(feature.shape)
     feature = feature.cpu().numpy()
     logging.info(f"Object feature shape: {feature.shape}")
     return feature
@@ -183,9 +184,12 @@ def get_scene_vector(batch):
 
     return feature
 
+
 def get_scene_thamiris_vector(batch, device):
     model = vit_small(patch_size=16)
-    state_dict = torch.load("models/scenes_thamiris/thamiris_FSL_places600_best.pth", map_location=device)
+    state_dict = torch.load(
+        "models/scenes_thamiris/thamiris_FSL_places600_best.pth", map_location=device
+    )
     model.load_state_dict(state_dict, strict=False)
     model.to(device)
 
