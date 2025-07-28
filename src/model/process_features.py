@@ -57,9 +57,8 @@ def process_pca_features(path_to_features: str, n_components=256):
     save_pca_models(pca_models)
 
 
-def load_features(path_to_features: str):
+def load_features(path_to_features: str, feature_sizes=[4096, 1, 768, 768, 256, 384]):
     features = np.load(path_to_features)
-    feature_sizes = [4096, 1, 768, 768, 256, 384]
 
     split_vectors = np.split(features, np.cumsum(feature_sizes)[:-1], axis=1)
 
@@ -175,6 +174,7 @@ def generate_tsne(
                 + str(option)
             )
             plt.savefig(f"results/tsne/tsne_features_Q{question_number}.{option}.png")
+            plt.clf()
             logging.info(
                 f"TSNE features plot saved to results/tsne/tsne_features_Q{question_number}.{option}.png"
             )
@@ -217,8 +217,51 @@ def generate_umap(
                 + str(option)
             )
             plt.savefig(f"results/umap/umap_features_Q{question_number}.{option}.png")
+            plt.clf()
             logging.info(
                 f"UMAP features plot saved to results/umap/umap_features_Q{question_number}.{option}.png"
             )
 
     return umap_features
+
+
+def generate_tsne_per_feature(
+    perplexity,
+    random_state=42,
+):
+    pca_features = load_features(
+        "features/pca_features.npy", feature_sizes=[256, 1, 256, 256, 256, 256]
+    )
+    feature_names = [
+        "agegender",
+        "ita",
+        "objects",
+        "nsfw",
+        "scene",
+        "thamiris_scene",
+    ]
+
+    for name, feature in zip(feature_names, pca_features):
+
+        if feature.shape[1] == 1:
+            feature = feature.repeat(
+                2, axis=1
+            )  # Repeat if single value for visualization
+
+        tsne_model = TSNE(
+            n_components=2,
+            perplexity=perplexity,
+            random_state=random_state,
+        )
+        tsne_features = tsne_model.fit_transform(feature)
+        logging.info(f"TSNE features shape for {name}: {tsne_features.shape}")
+        logging.info("KL divergence: " + str(tsne_model.kl_divergence_))
+
+        plt.scatter(tsne_features[:, 0], tsne_features[:, 1], s=1)
+        plt.title(f"TSNE by {name} feature")
+        plt.savefig(f"results/tsne/tsne_features_{name}.png")
+        plt.clf()
+        logging.info(
+            f"TSNE features plot for {name} saved to results/tsne/tsne_features_{name}.png"
+        )
+    return tsne_features

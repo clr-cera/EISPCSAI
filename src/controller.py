@@ -14,14 +14,18 @@ class Controller:
         )
 
     def start(self):
+
+        # Download for Reproducibility
         if self.args.download_dataset_name:
             datasets.download_dataset(self.args.download_dataset_name)
 
         if self.args.download_models:
             model.download.download_models()
 
+        # Model Testing
         self.test_separate()
 
+        # Feature Extraction
         if self.args.features_image:
             model.feature_separate.get_feature_vector(
                 self.args.features_image, self.torchdevice
@@ -36,6 +40,8 @@ class Controller:
                 path_to_store="features/sentiment",
                 torch_device=self.torchdevice,
             )
+
+        # Train Ensemble Sentiment
         if self.args.train_ensemble_sentiment:
             model.ensemble.train_ensemble_sentiment(
                 path_to_features="features/sentiment.npy",
@@ -48,12 +54,19 @@ class Controller:
                 path_to_labels="sentiment-dataset/annotations.csv",
                 feature_sizes=[256, 1, 256, 256, 256, 256],
             )
+
+        # Feature Normalization
         if self.args.sentiment_features_pca:
             model.process_features.process_pca_features(
                 path_to_features="features/sentiment.npy"
             )
+
+        # Visualization
         if self.args.generate_tsne:
             model.process_features.generate_tsne(perplexity=30)
+
+        if self.args.generate_tsne_per_feature:
+            model.process_features.generate_tsne_per_feature(perplexity=30)
 
         if self.args.generate_umap:
             model.process_features.generate_umap(n_neighbors=50, min_dist=0.1)
@@ -159,6 +172,12 @@ def _parseArguments():
         "--generate_tsne",
         help="When this option is set the sentiment dataset processed with pca will be used to generate tsne features",
         dest="generate_tsne",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--generate_tsne_per_feature",
+        help="When this option is set the sentiment dataset processed with pca will be used to generate tsne visualization per feature",
+        dest="generate_tsne_per_feature",
         action="store_true",
     )
     parser.add_argument(
