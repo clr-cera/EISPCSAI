@@ -53,7 +53,7 @@ class Controller:
                 path_to_features="features/sentiment.npy"
             )
         if self.args.generate_tsne:
-            model.process_features.generate_tsne(perplexity=500)
+            model.process_features.generate_tsne(perplexity=30)
 
         if self.args.generate_umap:
             model.process_features.generate_umap(n_neighbors=50, min_dist=0.1)
