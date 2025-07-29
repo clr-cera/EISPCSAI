@@ -13,7 +13,7 @@ from sklearn.metrics import (
 )
 import shap
 import itertools
-from utils import load_features
+from utils import load_features, ensure_dir
 from tqdm import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 
@@ -65,6 +65,13 @@ def train_ensemble_sentiment_combination(
         "max_depth": 7,
         "eta": 0.1,
     }
+    multi_option_params = {
+        "tree_method": "hist",
+        "objective": "binary:logistic",
+        "device": "cuda" if torch.cuda.is_available() else "cpu",
+        "max_depth": 7,
+        "eta": 0.1,
+    }
 
     # Prepare features for combination
     feature_vectors = load_features(path_to_features, feature_sizes)
@@ -72,31 +79,46 @@ def train_ensemble_sentiment_combination(
     features = list(zip(feature_vectors, feature_names))
 
     # Iterate over combinations of features
-    data = []
     with logging_redirect_tqdm():
-        for i in tqdm(range(1, 7)):
-            logging.info(f"-- Training ensemble with {i} features --\n")
-            combinations = list(itertools.combinations(features, i))
-            for combo in tqdm(combinations):
-                logging.info(
-                    f"Training ensemble with features: {[f[1] for f in combo]}"
-                )
-                X = np.concatenate([f[0] for f in combo], axis=1)
+        for question in tqdm(range(1, 6)):
+            data = []
+            logging.info(f"-- Training ensemble for question {question} --\n")
+            for i in tqdm(range(1, 7)):
+                logging.info(f"-- Training ensemble with {i} features --\n")
+                combinations = list(itertools.combinations(features, i))
+                for combo in tqdm(combinations):
+                    logging.info(
+                        f"Training ensemble with features: {[f[1] for f in combo]}"
+                    )
+                    X = np.concatenate([f[0] for f in combo], axis=1)
 
-                dfy = pd.read_csv(path_to_labels, sep=";")
-
-                # Only train for first question to have a direct comparison
-                data.append(
-                    [
-                        i,
-                        " ".join([f[1] for f in combo]),
-                        train_by_question(1, None, numeric_params, X, dfy),
+                    dfy = pd.read_csv(path_to_labels, sep=";")
+                    # These options were never assigned, so for consistency in metrics, we remove them
+                    columns = [
+                        c
+                        for c in dfy.columns
+                        if f"Q5.5" in c or f"Q5.6" in c or f"Q5.7" in c
                     ]
-                )
-                logging.info(data[-1])
+                    dfy = dfy.drop(columns=columns)
 
-    data.sort(key=lambda x: x[2])
-    save_combinatorics_data(data, "results/results_combinatorics.csv")
+                    # Only train for first question to have a direct comparison
+                    metric = None
+                    if question < 3:
+                        metric = train_by_question(
+                            question, None, numeric_params, X, dfy
+                        )
+                    else:
+                        metric = train_by_question(
+                            question, None, multi_option_params, X, dfy
+                        )
+                    data.append([i, " ".join([f[1] for f in combo]), metric])
+                    logging.info(data[-1])
+
+            data.sort(key=lambda x: x[2], reverse=question > 2)
+            ensure_dir("results/combinatorics")
+            save_combinatorics_data(
+                data, f"results/combinatorics/combinatorics_{question}.csv"
+            )
 
 
 def train_by_question(question_number, feature_sizes, xb_parameters, X, dfy):
