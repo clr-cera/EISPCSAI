@@ -95,11 +95,11 @@ def train_ensemble_sentiment_combination(
                 [
                     i,
                     "".join([f[1] for f in combo]),
-                    train_by_question(1, feature_sizes, numeric_params, X, dfy),
-                    train_by_question(2, feature_sizes, numeric_params, X, dfy),
-                    train_by_question(3, feature_sizes, multi_option_params, X, dfy),
-                    train_by_question(4, feature_sizes, multi_option_params, X, dfy),
-                    train_by_question(5, feature_sizes, multi_option_params, X, dfy),
+                    train_by_question(1, None, numeric_params, X, dfy),
+                    train_by_question(2, None, numeric_params, X, dfy),
+                    train_by_question(3, None, multi_option_params, X, dfy),
+                    train_by_question(4, None, multi_option_params, X, dfy),
+                    train_by_question(5, None, multi_option_params, X, dfy),
                 ]
             )
 
