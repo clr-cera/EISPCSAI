@@ -5,6 +5,7 @@ from sklearn.manifold import TSNE
 from matplotlib import pyplot as plt
 import pandas as pd
 import umap
+from utils import load_features
 
 
 def process_pca_features(path_to_features: str, n_components=256):
@@ -55,28 +56,6 @@ def process_pca_features(path_to_features: str, n_components=256):
     save_pca_features(pca_features)
 
     save_pca_models(pca_models)
-
-
-def load_features(path_to_features: str, feature_sizes=[4096, 1, 768, 768, 256, 384]):
-    features = np.load(path_to_features)
-
-    split_vectors = np.split(features, np.cumsum(feature_sizes)[:-1], axis=1)
-
-    agegender_vector = split_vectors[0]
-    ita_vector = split_vectors[1]
-    objects_vector = split_vectors[2]
-    nsfw_vector = split_vectors[3]
-    scene_vector = split_vectors[4]
-    thamiris_scene_vector = split_vectors[5]
-
-    return (
-        agegender_vector,
-        ita_vector,
-        objects_vector,
-        nsfw_vector,
-        scene_vector,
-        thamiris_scene_vector,
-    )
 
 
 def generate_pca_models(

@@ -2,6 +2,8 @@ import os
 import wget
 import gdown
 
+from utils import ensure_dir
+
 
 def download_models():
     ensure_dir("models/")
@@ -30,11 +32,6 @@ def download_models():
 
     # Nsfw_mobilenet2.224x224.h5
     # download_gdown('1t8cAnS8rNBQU8vo16CDAiBL0RuTJdesi', 'models/nsfw_model/')
-
-
-def ensure_dir(path: str):
-    if not os.path.exists(path):
-        os.mkdir(path)
 
 
 def download_wget(url: str, out: str):

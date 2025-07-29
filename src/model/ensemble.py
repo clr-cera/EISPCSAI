@@ -12,6 +12,8 @@ from sklearn.metrics import (
     ConfusionMatrixDisplay,
 )
 import shap
+import itertools
+from utils import load_features
 
 
 def train_ensemble_sentiment(
@@ -34,20 +36,78 @@ def train_ensemble_sentiment(
     }
 
     X = np.load(path_to_features)
+    dfy = pd.read_csv(path_to_labels, sep=";")
+
+    # These options were never assigned, so for consistency in metrics, we remove them
+    columns = [c for c in dfy.columns if f"Q5.5" in c or f"Q5.6" in c or f"Q5.7" in c]
+    dfy = dfy.drop(columns=columns)
     data = [
-        train_by_question(path_to_labels, 1, feature_sizes, numeric_params, X),
-        train_by_question(path_to_labels, 2, feature_sizes, numeric_params, X),
-        train_by_question(path_to_labels, 3, feature_sizes, multi_option_params, X),
-        train_by_question(path_to_labels, 4, feature_sizes, multi_option_params, X),
-        train_by_question(path_to_labels, 5, feature_sizes, multi_option_params, X),
+        train_by_question(1, feature_sizes, numeric_params, X, dfy),
+        train_by_question(2, feature_sizes, numeric_params, X, dfy),
+        train_by_question(3, feature_sizes, multi_option_params, X, dfy),
+        train_by_question(4, feature_sizes, multi_option_params, X, dfy),
+        train_by_question(5, feature_sizes, multi_option_params, X, dfy),
     ]
 
     save_data(data, "results/results.csv")
 
 
-def train_by_question(path_to_labels, question_number, feature_sizes, xb_parameters, X):
+def train_ensemble_sentiment_combination(
+    path_to_features, path_to_labels, feature_sizes=[4096, 1, 768, 768, 256, 384]
+):
+    numeric_params = {
+        "tree_method": "hist",
+        "objective": "reg:squarederror",
+        "eval_metric": "rmse",
+        "device": "cuda" if torch.cuda.is_available() else "cpu",
+        "max_depth": 7,
+        "eta": 0.1,
+    }
+    multi_option_params = {
+        "tree_method": "hist",
+        "objective": "binary:logistic",
+        "device": "cuda" if torch.cuda.is_available() else "cpu",
+        "max_depth": 7,
+        "eta": 0.1,
+    }
+
+    # Prepare features for combination
+    feature_vectors = load_features(path_to_features, feature_sizes)
+    feature_names = ["Age_gender", "Ita", "Objects", "NSFW", "Scene", "Thamiris Scene"]
+    features = zip(feature_vectors, feature_names)
+
+    # Iterate over combinations of features
+    data = []
+    for i in range(1, 6):
+        combinations = itertools.combinations(features, i)
+        for combo in combinations:
+            logging.info(f"Training ensemble with features: {[f[1] for f in combo]}")
+            X = np.concatenate([f[0] for f in combo], axis=1)
+
+            dfy = pd.read_csv(path_to_labels, sep=";")
+
+            # These options were never assigned, so for consistency in metrics, we remove them
+            columns = [
+                c for c in dfy.columns if f"Q5.5" in c or f"Q5.6" in c or f"Q5.7" in c
+            ]
+            dfy = dfy.drop(columns=columns)
+            data.extend(
+                [
+                    i,
+                    "".join([f[1] for f in combo]),
+                    train_by_question(1, feature_sizes, numeric_params, X, dfy),
+                    train_by_question(2, feature_sizes, numeric_params, X, dfy),
+                    train_by_question(3, feature_sizes, multi_option_params, X, dfy),
+                    train_by_question(4, feature_sizes, multi_option_params, X, dfy),
+                    train_by_question(5, feature_sizes, multi_option_params, X, dfy),
+                ]
+            )
+
+    save_data(data, "results/results_combinatorics.csv")
+
+
+def train_by_question(question_number, feature_sizes, xb_parameters, X, dfy):
     # Get labels for the specific question
-    dfy = pd.read_csv(path_to_labels, sep=";")
     columns = [c for c in dfy.columns if f"Q{question_number}" in c]
     grouped = dfy[columns].copy()
     grouped.columns = ["".join(col.split(".")[1:]) for col in columns]
