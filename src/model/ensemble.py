@@ -14,6 +14,8 @@ from sklearn.metrics import (
 import shap
 import itertools
 from utils import load_features
+from tqdm import tqdm
+from tqdm.contrib.logging import logging_redirect_tqdm
 
 
 def train_ensemble_sentiment(
@@ -53,7 +55,7 @@ def train_ensemble_sentiment(
 
 
 def train_ensemble_sentiment_combination(
-    path_to_features, path_to_labels, feature_sizes=[4096, 1, 768, 768, 256, 384]
+    path_to_features, path_to_labels, feature_sizes
 ):
     numeric_params = {
         "tree_method": "hist",
@@ -63,50 +65,43 @@ def train_ensemble_sentiment_combination(
         "max_depth": 7,
         "eta": 0.1,
     }
-    multi_option_params = {
-        "tree_method": "hist",
-        "objective": "binary:logistic",
-        "device": "cuda" if torch.cuda.is_available() else "cpu",
-        "max_depth": 7,
-        "eta": 0.1,
-    }
 
     # Prepare features for combination
     feature_vectors = load_features(path_to_features, feature_sizes)
     feature_names = ["Age_gender", "Ita", "Objects", "NSFW", "Scene", "Thamiris Scene"]
-    features = zip(feature_vectors, feature_names)
+    features = list(zip(feature_vectors, feature_names))
 
     # Iterate over combinations of features
     data = []
-    for i in range(1, 6):
-        combinations = itertools.combinations(features, i)
-        for combo in combinations:
-            logging.info(f"Training ensemble with features: {[f[1] for f in combo]}")
-            X = np.concatenate([f[0] for f in combo], axis=1)
+    with logging_redirect_tqdm():
+        for i in tqdm(range(1, 6)):
+            logging.info(f"-- Training ensemble with {i} features --\n")
+            combinations = list(itertools.combinations(features, i))
+            for combo in tqdm(combinations):
+                logging.info(
+                    f"Training ensemble with features: {[f[1] for f in combo]}"
+                )
+                X = np.concatenate([f[0] for f in combo], axis=1)
 
-            dfy = pd.read_csv(path_to_labels, sep=";")
+                dfy = pd.read_csv(path_to_labels, sep=";")
 
-            # These options were never assigned, so for consistency in metrics, we remove them
-            columns = [
-                c for c in dfy.columns if f"Q5.5" in c or f"Q5.6" in c or f"Q5.7" in c
-            ]
-            dfy = dfy.drop(columns=columns)
-            data.append(
-                [
-                    i,
-                    "".join([f[1] for f in combo]),
-                    train_by_question(1, None, numeric_params, X, dfy),
-                    train_by_question(2, None, numeric_params, X, dfy),
-                    train_by_question(3, None, multi_option_params, X, dfy),
-                    train_by_question(4, None, multi_option_params, X, dfy),
-                    train_by_question(5, None, multi_option_params, X, dfy),
-                ]
-            )
+                # Only train for first question to have a direct comparison
+                data.append(
+                    [
+                        i,
+                        " ".join([f[1] for f in combo]),
+                        train_by_question(1, None, numeric_params, X, dfy),
+                    ]
+                )
+                logging.info(data[-1])
 
-    save_data(data, "results/results_combinatorics.csv")
+    data.sort(key=lambda x: x[2])
+    save_combinatorics_data(data, "results/results_combinatorics.csv")
 
 
 def train_by_question(question_number, feature_sizes, xb_parameters, X, dfy):
+    logging.info(f"Training for question {question_number}")
+
     # Get labels for the specific question
     columns = [c for c in dfy.columns if f"Q{question_number}" in c]
     grouped = dfy[columns].copy()
@@ -334,6 +329,15 @@ def save_data(data, filename):
     )
     df.to_csv(filename, index=True)
     logging.info(f"Data saved to {filename}")
+
+
+def save_combinatorics_data(data, filename):
+    df = pd.DataFrame(
+        data,
+        columns=["Number of Features", "Features", "Metric"],
+    )
+    df.to_csv(filename, index=True)
+    logging.info(f"Combinatorics data saved to {filename}")
 
 
 def load_ensemble_model(path_to_model):

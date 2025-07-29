@@ -56,13 +56,13 @@ class Controller:
             )
 
         if self.args.train_ensemble_sentiment_combinatorics:
-            model.ensemble.train_ensemble_sentiment_combinatorics(
+            model.ensemble.train_ensemble_sentiment_combination(
                 path_to_features="features/sentiment.npy",
                 path_to_labels="sentiment-dataset/annotations.csv",
                 feature_sizes=[4096, 1, 768, 768, 256, 384],
             )
         if self.args.train_ensemble_sentiment_combinatorics_pca:
-            model.ensemble.train_ensemble_sentiment_combinatorics(
+            model.ensemble.train_ensemble_sentiment_combination(
                 path_to_features="features/pca_features.npy",
                 path_to_labels="sentiment-dataset/annotations.csv",
                 feature_sizes=[256, 1, 256, 256, 256, 256],
@@ -178,7 +178,7 @@ def _parseArguments():
     parser.add_argument(
         "--train_ensemble_sentiment_combinatorics_pca",
         help="When this option is set the sentiment dataset will be used to train ensemble model with combinatorics on pca features to find optimal feature combination",
-        dest="train_ensemble_sentiment_combinatorics",
+        dest="train_ensemble_sentiment_combinatorics_pca",
         action="store_true",
     )
     parser.add_argument(
