@@ -91,7 +91,7 @@ def train_ensemble_sentiment_combination(
                 c for c in dfy.columns if f"Q5.5" in c or f"Q5.6" in c or f"Q5.7" in c
             ]
             dfy = dfy.drop(columns=columns)
-            data.extend(
+            data.append(
                 [
                     i,
                     "".join([f[1] for f in combo]),
