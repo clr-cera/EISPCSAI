@@ -74,7 +74,7 @@ def train_ensemble_sentiment_combination(
     # Iterate over combinations of features
     data = []
     with logging_redirect_tqdm():
-        for i in tqdm(range(1, 6)):
+        for i in tqdm(range(1, 7)):
             logging.info(f"-- Training ensemble with {i} features --\n")
             combinations = list(itertools.combinations(features, i))
             for combo in tqdm(combinations):
