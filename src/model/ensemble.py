@@ -6,99 +6,49 @@ import torch
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import (
+    balanced_accuracy_score,
+    confusion_matrix,
+    ConfusionMatrixDisplay,
+)
 import shap
 
 
 def train_ensemble_sentiment(
     path_to_features, path_to_labels, feature_sizes=[4096, 1, 768, 768, 256, 384]
 ):
+    numeric_params = {
+        "tree_method": "hist",
+        "objective": "reg:squarederror",
+        "eval_metric": "rmse",
+        "device": "cuda" if torch.cuda.is_available() else "cpu",
+        "max_depth": 7,
+        "eta": 0.1,
+    }
+    multi_option_params = {
+        "tree_method": "hist",
+        "objective": "binary:logistic",
+        "device": "cuda" if torch.cuda.is_available() else "cpu",
+        "max_depth": 7,
+        "eta": 0.1,
+    }
+
+    X = np.load(path_to_features)
     data = [
-        train_numeric_question(path_to_features, path_to_labels, 1, feature_sizes),
-        train_numeric_question(path_to_features, path_to_labels, 2, feature_sizes),
-        train_multi_option_question(path_to_features, path_to_labels, 3, feature_sizes),
-        train_multi_option_question(path_to_features, path_to_labels, 4, feature_sizes),
-        train_multi_option_question(path_to_features, path_to_labels, 5, feature_sizes),
+        train_by_question(path_to_labels, 1, feature_sizes, numeric_params, X),
+        train_by_question(path_to_labels, 2, feature_sizes, numeric_params, X),
+        train_by_question(path_to_labels, 3, feature_sizes, multi_option_params, X),
+        train_by_question(path_to_labels, 4, feature_sizes, multi_option_params, X),
+        train_by_question(path_to_labels, 5, feature_sizes, multi_option_params, X),
     ]
 
     save_data(data, "results/results.csv")
 
 
-def train_numeric_question(
-    path_to_features, path_to_labels, question_number, feature_sizes
-):
-    # Load features and labels
-    X = np.load(path_to_features)
-
-    # Average all Q1 labels
+def train_by_question(path_to_labels, question_number, feature_sizes, xb_parameters, X):
+    # Get labels for the specific question
     dfy = pd.read_csv(path_to_labels, sep=";")
-    col_idxs = [(question_number + 1) + 26 * i for i in range(5)]
-    y = dfy.iloc[:, col_idxs].mean(axis=1).values
-
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=123
-    )
-
-    logging.info(f"Labels shape: {y.shape}")
-    logging.info(f"Features shape: {X.shape}")
-    logging.info(f"Train shape: {X_train.shape}, {y_train.shape}")
-    logging.info(f"Test shape: {X_test.shape}, {y_test.shape}")
-
-    # Convert to DMatrix for XGBoost
-    dtrain = xgb.DMatrix(X_train, label=y_train)
-
-    # Set parameters for XGBoost
-    params = {
-        "tree_method": "hist",
-        "objective": "reg:squarederror",
-        "eval_metric": "rmse",
-        "device": "cuda" if torch.cuda.is_available() else "cpu",
-        "verbosity": 3,
-        "max_depth": 7,
-        "eta": 0.1,
-    }
-
-    # Train the model
-    bst = xgb.train(params, dtrain, num_boost_round=128)
-
-    X_test = xgb.DMatrix(X_test)
-    predictions = bst.predict(X_test)
-
-    mse = sklearn.metrics.mean_squared_error(y_test, predictions)
-    logging.info(f"Mse: {mse}")
-
-    explainer = shap.TreeExplainer(bst)
-    shap_values = explainer.shap_values(X_train)
-    (
-        age_gender_shap,
-        ita_shap,
-        objects_shap,
-        nsfw_shap,
-        scene_shap,
-        thamiris_scene_shap,
-    ) = save_shap_plot(
-        shap_values, mse, feature_sizes, f"shap_plot_q{question_number}_reg.png"
-    )
-
-    bst.save_model(f"models/ensemble/ensemble_sentiment_q{question_number}.json")
-    return (
-        mse,
-        age_gender_shap,
-        ita_shap,
-        objects_shap,
-        nsfw_shap,
-        scene_shap,
-        thamiris_scene_shap,
-    )
-
-
-def train_multi_option_question(
-    path_to_features, path_to_labels, question_number, feature_sizes
-):
-    X = np.load(path_to_features)
-
-    dfy = pd.read_csv(path_to_labels, sep=";")
-    columns = [c for c in dfy.columns if f".Q{question_number}." in c]
+    columns = [c for c in dfy.columns if f"Q{question_number}" in c]
     grouped = dfy[columns].copy()
     grouped.columns = ["".join(col.split(".")[1:]) for col in columns]
     mean_by_answer = grouped.T.groupby(by=grouped.columns).mean().T
@@ -117,56 +67,48 @@ def train_multi_option_question(
     # Convert to DMatrix for XGBoost
     dtrain = xgb.DMatrix(X_train, label=y_train)
 
-    # Set parameters for XGBoost
-    params = {
-        "tree_method": "hist",
-        "objective": "binary:logistic",
-        "device": "cuda" if torch.cuda.is_available() else "cpu",
-        "verbosity": 3,
-        "max_depth": 7,
-        "eta": 0.1,
-    }
-
     # Train the model
-    bst = xgb.train(params, dtrain, num_boost_round=128)
+    bst = xgb.train(xb_parameters, dtrain, num_boost_round=128)
 
-    # Uncomment the following lines to load the model from a file
-
+    # Get Predictions
     X_test = xgb.DMatrix(X_test)
     predictions = bst.predict(X_test)
-    predicted_classes = np.round(predictions)
 
-    acc = []
+    # Get metric
+    metric = None
+    opt_metric = []
+    if xb_parameters["objective"] == "reg:squarederror":
+        metric = sklearn.metrics.mean_squared_error(y_test, predictions)
+        logging.info(f"Metric for Q{question_number}: {metric}")
+        opt_metric.append(metric)
+    else:
+        predicted_classes = np.round(predictions)
+        for i in range(y_test.shape[1]):
+            opt_metric.append(
+                balanced_accuracy_score(y_test[:, i], predicted_classes[:, i])
+            )
 
-    for i in range(y_test.shape[1]):
-        acc.append(accuracy_score(y_test[:, i], predicted_classes[:, i]))
+        opt_metric = np.array(opt_metric)
+        logging.info(f"Acc Q{question_number}: {opt_metric}")
+        metric = opt_metric.mean()
 
-    acc = np.array(acc)
-    logging.info(f"Acc Q{question_number}: {acc}")
+    # If there are feature sizes, calculate SHAP values and save plots
+    if feature_sizes:
+        explainer = shap.TreeExplainer(bst)
+        shap_values = explainer.shap_values(X_train)
+        logging.info(f"SHAP values shape: {shap_values.shape}")
 
-    explainer = shap.TreeExplainer(bst)
-    shap_values = explainer.shap_values(X_train)
-    logging.info(f"SHAP values shape: {shap_values.shape}")
+        # If it is a numeric question, we expand the dimensions to generalize with multi-option questions
+        shap_data = []
+        if len(shap_values.shape) == 2:
+            shap_values = np.expand_dims(shap_values, axis=2)
 
-    shap_data = []
-    for i in range(shap_values.shape[2]):
-        logging.info(
-            f"SHAP values for Q{question_number}.{i}: {shap_values[:, :, i].shape}"
-        )
-        (
-            age_gender_shap,
-            ita_shap,
-            objects_shap,
-            nsfw_shap,
-            scene_shap,
-            thamiris_scene_shap,
-        ) = save_shap_plot(
-            shap_values[:, :, i],
-            acc[i],
-            feature_sizes,
-            f"shap_plot_q{question_number}.{i}.png",
-        )
-        shap_data.append(
+        # Now we iterate over the options
+        for i in range(shap_values.shape[2]):
+            logging.info(
+                f"SHAP values for Q{question_number}.{i}: {shap_values[:, :, i].shape}"
+            )
+            # We calculate the SHAP values for each feature size and save the plots
             (
                 age_gender_shap,
                 ita_shap,
@@ -174,27 +116,42 @@ def train_multi_option_question(
                 nsfw_shap,
                 scene_shap,
                 thamiris_scene_shap,
+            ) = save_shap_plot(
+                shap_values[:, :, i],
+                opt_metric[i],
+                feature_sizes,
+                f"shap_plot_q{question_number}.{i}.png",
             )
-        )
+            shap_data.append(
+                (
+                    age_gender_shap,
+                    ita_shap,
+                    objects_shap,
+                    nsfw_shap,
+                    scene_shap,
+                    thamiris_scene_shap,
+                )
+            )
+        (
+            age_gender_shap,
+            ita_shap,
+            objects_shap,
+            nsfw_shap,
+            scene_shap,
+            thamiris_scene_shap,
+        ) = np.mean(shap_data, axis=0)
 
-    (
-        age_gender_shap,
-        ita_shap,
-        objects_shap,
-        nsfw_shap,
-        scene_shap,
-        thamiris_scene_shap,
-    ) = np.mean(shap_data, axis=0)
-    bst.save_model(f"models/ensemble/ensemble_sentiment_q{question_number}.json")
-    return (
-        acc.mean(),
-        age_gender_shap,
-        ita_shap,
-        objects_shap,
-        nsfw_shap,
-        scene_shap,
-        thamiris_scene_shap,
-    )
+        bst.save_model(f"models/ensemble/ensemble_sentiment_q{question_number}.json")
+        return (
+            metric,
+            age_gender_shap,
+            ita_shap,
+            objects_shap,
+            nsfw_shap,
+            scene_shap,
+            thamiris_scene_shap,
+        )
+    return metric
 
 
 def save_confusion_matrix(y_test, predicted_classes, img_name="confusion_matrix.png"):
