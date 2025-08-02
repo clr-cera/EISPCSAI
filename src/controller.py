@@ -4,6 +4,7 @@ import torch
 import datasets
 import model
 import dataloader
+from codecarbon import track_emissions
 
 
 class Controller:
@@ -13,6 +14,7 @@ class Controller:
             "cuda:0" if torch.cuda.is_available() else "cpu"
         )
 
+    @track_emissions(project_name="Ensemble Sensitive Data", output_dir="emissions")
     def start(self):
 
         # Download for Reproducibility
