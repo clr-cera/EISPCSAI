@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+    "altair[all]>=5.5.0",
     "codecarbon>=3.0.4",
     "dlib>=19.24.9",
     "facenet-pytorch>=2.5.3",
@@ -30,6 +31,7 @@ dependencies = [
     "transformers>=4.50.0",
     "ultralytics>=8.3.133",
     "umap-learn>=0.5.9.post2",
+    "vl-convert-python>=1.8.0",
     "wget>=3.2",
     "xgboost>=2.1.4",
 ]

@@ -150,12 +150,12 @@ def generate_tsne(
                 "TSNE Features, question "
                 + str(question_number)
                 + ", option "
-                + str(option)
+                + str(option + 1)
             )
-            plt.savefig(f"results/tsne/tsne_features_Q{question_number}.{option}.png")
+            plt.savefig(f"results/tsne/tsne_features_Q{question_number}.{option+1}.png")
             plt.clf()
             logging.info(
-                f"TSNE features plot saved to results/tsne/tsne_features_Q{question_number}.{option}.png"
+                f"TSNE features plot saved to results/tsne/tsne_features_Q{question_number}.{option+1}.png"
             )
 
     return tsne_features

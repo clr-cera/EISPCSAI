@@ -312,7 +312,7 @@ def save_shap_plot(
     logging.info(f"Scene importance: {scene_shap_mean}")
     logging.info(f"Thamiris Scene importance: {thamiris_scene_shap_mean}")
     plt.bar(
-        ["Age Gender", "Ita", "Objects", "NSFW", "Scene", "Thamiris Scene"],
+        ["Age Gender", "Ita", "Objects", "Nudity", "Places", "Coelho"],
         [
             age_gender_shap_mean,
             ita_shap_mean,
