@@ -21,6 +21,9 @@ def download_models():
         "http://places2.csail.mit.edu/models_places365/alexnet_places365.pth.tar",
         "models/scenes/alexnet_places365.pth.tar",
     )
+    download_gdown(
+        "1boHawW-6hY7l0_jRqqdSt8b7kPbXzxDk", "models/scenes/categories_places365.txt"
+    )
     # Shape_Predictor_68_face_landmarks.dat
     download_gdown("1AEtQ2s4k5R7IKdrK6vs_zqH_DvXIeFUK", "models/fitzpatrick/")
 

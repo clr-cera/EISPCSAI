@@ -5,6 +5,7 @@ import datasets
 import model
 import dataloader
 from codecarbon import track_emissions
+from utils import ensure_dir
 
 
 class Controller:
@@ -13,10 +14,14 @@ class Controller:
         self.torchdevice = torch.device(
             "cuda:0" if torch.cuda.is_available() else "cpu"
         )
+        ensure_dir("./emissions/")
 
-    @track_emissions(project_name="Ensemble Sensitive Data", output_dir="emissions")
+    @track_emissions(
+        project_name="Ensemble Sensitive Data",
+        output_dir="emissions",
+        log_level="error",
+    )
     def start(self):
-
         # Download for Reproducibility
         if self.args.download_dataset_name:
             datasets.download_dataset(self.args.download_dataset_name)
