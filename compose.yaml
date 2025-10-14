@@ -12,3 +12,4 @@ services:
               capabilities: [gpu]
     environment:
       - YOLO_VERBOSE=False
+    working_dir: /app
