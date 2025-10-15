@@ -28,8 +28,14 @@ def download_models():
     download_gdown("1AEtQ2s4k5R7IKdrK6vs_zqH_DvXIeFUK", "models/fitzpatrick/")
 
     # Model_Age
-    download_gdown("1ZF33ousEHhAwK8MmNXpuwmvVtXilVAJ_", "models/model_age/vgg16_agegender.hdf5")
-    download_gdown("152W9ijPlnaQQOJsFBJtl5aMEyUKWf5gd", "models/model_age/vgg16_agegender_model.json")
+    ensure_dir("models/model_age/")
+    download_gdown(
+        "1ZF33ousEHhAwK8MmNXpuwmvVtXilVAJ_", "models/model_age/vgg16_agegender.hdf5"
+    )
+    download_gdown(
+        "152W9ijPlnaQQOJsFBJtl5aMEyUKWf5gd",
+        "models/model_age/vgg16_agegender_model.json",
+    )
 
     # Model Scene Thamiris
     download_gdown("1RLaTWt_YC6V_Pza6rTQJ2Qfzn3fOJdZ8", "models/scenes_thamiris/")
