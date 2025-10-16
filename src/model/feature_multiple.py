@@ -12,6 +12,7 @@ from tqdm import tqdm
 from .thamirismodel import vit_small
 
 from model.feature_separate import get_age_gender_vector, get_ita_vector
+from utils import ensure_dir
 
 
 def get_feature_vector(dataloader, path_to_store=None, torch_device=None):
@@ -38,6 +39,7 @@ def get_feature_vector(dataloader, path_to_store=None, torch_device=None):
             f"Batch {iteration} processed, images processed: {arr.shape[0]}, feature size: {arr.shape[1]}"
         )
 
+    ensure_dir(path_to_store.rsplit("/", 1)[0])
     np.save(path_to_store, arr)
     logging.info(f"Features saved to {path_to_store}")
 
