@@ -51,6 +51,7 @@ def train_ensemble_sentiment(
         train_by_question(5, feature_sizes, multi_option_params, X, dfy),
     ]
 
+    ensure_dir("results/")
     save_data(data, "results/results.csv")
 
 
@@ -234,6 +235,7 @@ def train_by_question(question_number, feature_sizes, xb_parameters, X, dfy):
 def save_confusion_matrix(y_test, predicted_classes, img_name="confusion_matrix.png"):
     cm = confusion_matrix(y_test, predicted_classes)
     disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+    ensure_dir("results/")
     disp.plot().figure_.savefig(f"results/{img_name}")
     plt.clf()
 
@@ -323,6 +325,7 @@ def save_shap_plot(
         ],
     )
     plt.title(f"SHAP Feature Importance, metric= {metric:.2f}")
+    ensure_dir("results/")
     plt.savefig(f"results/{img_name}", dpi=300, bbox_inches="tight")
     plt.clf()
     logging.info(f"SHAP plot saved to results/{img_name}")
@@ -349,6 +352,7 @@ def save_data(data, filename):
             "Thamiris Scene",
         ],
     )
+    ensure_dir(filename.rsplit("/", 1)[0])
     df.to_csv(filename, index=True)
     logging.info(f"Data saved to {filename}")
 
@@ -358,6 +362,7 @@ def save_combinatorics_data(data, filename):
         data,
         columns=["Number of Features", "Features", "Metric"],
     )
+    ensure_dir(filename.rsplit("/", 1)[0])
     df.to_csv(filename, index=True)
     logging.info(f"Combinatorics data saved to {filename}")
 
