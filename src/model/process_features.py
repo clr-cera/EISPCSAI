@@ -154,6 +154,7 @@ def generate_tsne(
                 + ", option "
                 + str(option + 1)
             )
+            ensure_dir("results/tsne")
             plt.savefig(f"results/tsne/tsne_features_Q{question_number}.{option+1}.png")
             plt.clf()
             logging.info(
@@ -197,6 +198,7 @@ def generate_umap(
                 + ", option "
                 + str(option)
             )
+            ensure_dir("results/umap")
             plt.savefig(f"results/umap/umap_features_Q{question_number}.{option}.png")
             plt.clf()
             logging.info(
