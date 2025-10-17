@@ -5,7 +5,7 @@ from sklearn.manifold import TSNE
 from matplotlib import pyplot as plt
 import pandas as pd
 import umap
-from utils import load_features
+from utils import load_features, ensure_dir
 
 
 def process_pca_features(path_to_features: str, n_components=256):
@@ -87,6 +87,7 @@ def generate_pca_features(vector_list: list[np.ndarray], pca_models: list[PCA]):
 
 def save_pca_features(pca_features):
     path_to_store = "features/pca_features.npy"
+    ensure_dir(path_to_store.rsplit("/", 1)[0])
     pca_features = np.concatenate(pca_features, axis=1)
     logging.info(f"PCA features shape: {pca_features.shape}")
     np.save(path_to_store, pca_features)
@@ -95,6 +96,7 @@ def save_pca_features(pca_features):
 
 def save_pca_models(pca_models: list[PCA]):
     path_to_store = "models/pca/models.npz"
+    ensure_dir(path_to_store.rsplit("/", 1)[0])
     (
         agegender_pca_model,
         objects_pca_model,
