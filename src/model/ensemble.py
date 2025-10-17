@@ -219,6 +219,7 @@ def train_by_question(question_number, feature_sizes, xb_parameters, X, dfy):
             thamiris_scene_shap,
         ) = np.mean(shap_data, axis=0)
 
+        ensure_dir("models/ensemble/")
         bst.save_model(f"models/ensemble/ensemble_sentiment_q{question_number}.json")
         return (
             metric,
