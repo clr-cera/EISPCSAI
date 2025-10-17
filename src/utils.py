@@ -4,7 +4,7 @@ import numpy as np
 
 def ensure_dir(path: str):
     if not os.path.exists(path):
-        os.mkdir(path)
+        os.makedirs(path)
 
 
 def load_features(path_to_features: str, feature_sizes=[4096, 1, 768, 768, 256, 384]):
