@@ -230,19 +230,19 @@ def _parseArguments():
     )
     parser.add_argument(
         "--generate_tsne",
-        help="When this option is set the sentiment dataset processed with pca will be used to generate tsne features",
+        help="When this option is set the dataset processed with pca will be used to generate tsne features",
         dest="generate_tsne",
         action="store_true",
     )
     parser.add_argument(
         "--generate_tsne_per_feature",
-        help="When this option is set the sentiment dataset processed with pca will be used to generate tsne visualization per feature",
+        help="When this option is set the dataset processed with pca will be used to generate tsne visualization per feature",
         dest="generate_tsne_per_feature",
         action="store_true",
     )
     parser.add_argument(
         "--generate_umap",
-        help="When this option is set the sentiment dataset processed with pca will be used to generate umap features",
+        help="When this option is set the dataset processed with pca will be used to generate umap features",
         dest="generate_umap",
         action="store_true",
     )
