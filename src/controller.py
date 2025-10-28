@@ -47,6 +47,17 @@ class Controller:
                 path_to_store="features/sentiment",
                 torch_device=self.torchdevice,
             )
+        if self.args.rcpd_dataset_feature:
+            rcpd_dataloader = dataloader.get_rcpd_dataloader(
+                prepend_img_dir=self.args.rcpd_dataset_feature,
+                batch_size=32,
+                shuffle=False,
+            )
+            model.feature_multiple.get_feature_vector(
+                rcpd_dataloader,
+                path_to_store="features/rcpd_features.npy",
+                torch_device=self.torchdevice,
+            )
 
         # Train Ensemble Sentiment
         if self.args.train_ensemble_sentiment:
@@ -169,6 +180,13 @@ def _parseArguments():
         "When this option is set the sentiment dataset will be used to extract feature vectors",
         dest="sentiment_dataset_feature",
         action="store_true",
+    )
+    parser.add_argument(
+        "--rcpd-dataset-feature",
+        "When this option is set the rcpd dataset will be used to extract feature vectors, it receives the prepend image directory as argument",
+        dest="rcpd_dataset_feature",
+        type=str,
+        default=None,
     )
     parser.add_argument(
         "--train_ensemble_sentiment",

@@ -78,3 +78,18 @@ class RCPDDataloader(Dataset):
         if self.transform:
             image = self.transform(image)
         return image, label
+
+
+def get_rcpd_dataloader(prepend_img_dir: str, batch_size=32, shuffle=True):
+    dataset = RCPDDataloader(prepend_img_dir=prepend_img_dir)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
+    return dataloader
+
+
+def test_rcpd_dataloader():
+    dataloader = get_rcpd_dataloader(prepend_img_dir="rcpd/images/")
+    for images, labels in dataloader:
+        print(f"Batch size: {len(images)}")
+        print(f"Image shape: {images.shape}")
+        print(f"Labels: {labels}")
+        break  # Remove this line to iterate through the entire dataset
