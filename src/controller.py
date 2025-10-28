@@ -91,6 +91,10 @@ class Controller:
             model.process_features.process_pca_features(
                 path_to_features="features/sentiment.npy"
             )
+        if self.args.rcpd_features_pca:
+            model.process_features.process_pca_features(
+                path_to_features="features/rcpd_features.npy"
+            )
 
         # Visualization
         if self.args.generate_tsne:
@@ -210,6 +214,12 @@ def _parseArguments():
         "--process_pca_sentiment",
         help="When this option is set the features extracted from sentiment dataset are going to be processed with PCA",
         dest="sentiment_features_pca",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--process_pca_rcpd",
+        help="When this option is set the features extracted from rcpd dataset are going to be processed with PCA",
+        dest="rcpd_features_pca",
         action="store_true",
     )
     parser.add_argument(
