@@ -176,14 +176,14 @@ def _parseArguments():
         default=None,
     )
     parser.add_argument(
-        "--sentiment-dataset-feature"
-        "When this option is set the sentiment dataset will be used to extract feature vectors",
+        "--sentiment-dataset-feature",
+        help="When this option is set the sentiment dataset will be used to extract feature vectors",
         dest="sentiment_dataset_feature",
         action="store_true",
     )
     parser.add_argument(
         "--rcpd-dataset-feature",
-        "When this option is set the rcpd dataset will be used to extract feature vectors, it receives the prepend image directory as argument",
+        help="When this option is set the rcpd dataset will be used to extract feature vectors, it receives the prepend image directory as argument",
         dest="rcpd_dataset_feature",
         type=str,
         default=None,

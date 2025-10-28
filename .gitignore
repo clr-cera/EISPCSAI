@@ -11,3 +11,4 @@ results/
 .venv/
 emissions
 rcpd*.csv
+rcpd/images

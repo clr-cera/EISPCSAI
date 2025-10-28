@@ -68,7 +68,7 @@ class RCPDDataloader(Dataset):
         return len(self.data)
 
     def __getitem__(self, idx):
-        img_path = os.path.join(self.prepend_img_dir, self.data.iloc[idx, 2])
+        img_path = os.path.join(self.prepend_img_dir, self.data.iloc[idx, 2][1:])
         image = decode_image(img_path)
         if image.shape[0] == 1:  # If grayscale, convert to RGB
             image = image.repeat(3, 1, 1)
