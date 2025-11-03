@@ -55,6 +55,148 @@ def train_ensemble_sentiment(
     save_data(data, "results/results.csv")
 
 
+def train_ensemble_rcpd(path_to_features, path_to_labels, feature_sizes):
+    xgboost_params = {
+        "tree_method": "hist",
+        "objective": "multi:softprob",
+        "device": "cuda" if torch.cuda.is_available() else "cpu",
+        "max_depth": 7,
+        "eta": 0.1,
+        "eval_metric": "mlogloss",
+        "num_class": 6,
+    }
+    X = np.load(path_to_features)
+    dfy = pd.read_csv(path_to_labels)
+    y = dfy["img_category_num"].values
+
+    X_train = X[:1001]
+    X_val = X[1001:1201]
+
+    y_train = y[:1001]
+    y_val = y[1001:1201]
+
+    logging.info(f"Training ensemble for RCPD dataset")
+    logging.info(f"Labels shape: {y.shape}")
+    logging.info(f"Features shape: {X.shape}")
+    logging.info(f"Train shape: {X_train.shape}, {y_train.shape}")
+    logging.info(f"Validation shape: {X_val.shape}, {y_val.shape}")
+
+    # Convert to DMatrix for XGBoost
+    dtrain = xgb.DMatrix(X_train, label=y_train)
+
+    # Train the model
+    bst = xgb.train(xgboost_params, dtrain, num_boost_round=128)
+    ensure_dir("models/ensemble/")
+    bst.save_model("models/ensemble/ensemble_rcpd.model")
+
+    # Get Predictions
+    X_val_dmatrix = xgb.DMatrix(X_val)
+    predictions = bst.predict(X_val_dmatrix)
+    predicted_classes = np.argmax(predictions, axis=1)
+
+    # Get metric
+    acc = balanced_accuracy_score(y_val, predicted_classes)
+    logging.info(f"Balanced Accuracy for RCPD ensemble: {acc}")
+
+    save_confusion_matrix(
+        y_val, predicted_classes, img_name="confusion_matrix_rcpd.png"
+    )
+
+    # Calculate SHAP values and save plots
+    explainer = shap.TreeExplainer(bst)
+    shap_values = explainer.shap_values(X_train)
+
+    logging.info(f"SHAP values shape: {shap_values.shape}")
+    (
+        age_gender_shap,
+        ita_shap,
+        objects_shap,
+        nsfw_shap,
+        scene_shap,
+        thamiris_scene_shap,
+    ) = save_shap_plot(shap_values, acc, feature_sizes, "shap_plot_rcpd.png")
+
+    ensure_dir("results/")
+    save_data(
+        [
+            (
+                acc,
+                age_gender_shap,
+                ita_shap,
+                objects_shap,
+                nsfw_shap,
+                scene_shap,
+                thamiris_scene_shap,
+            )
+        ],
+        "results/results_rcpd.csv",
+    )
+
+
+def train_ensemble_rcpd_combination(path_to_features, path_to_labels, feature_sizes):
+    xgboost_params = {
+        "tree_method": "hist",
+        "objective": "multi:softprob",
+        "device": "cuda" if torch.cuda.is_available() else "cpu",
+        "max_depth": 7,
+        "eta": 0.1,
+        "eval_metric": "mlogloss",
+        "num_class": 6,
+    }
+
+    # Prepare features for combination
+    feature_vectors = load_features(path_to_features, feature_sizes)
+    feature_names = ["Age_gender", "Ita", "Objects", "NSFW", "Scene", "Thamiris Scene"]
+    features = list(zip(feature_vectors, feature_names))
+
+    data = []
+    with logging_redirect_tqdm():
+        for i in tqdm(range(1, 7)):
+            logging.info(f"-- Training ensemble with {i} features --\n")
+            combinations = list(itertools.combinations(features, i))
+            for combo in tqdm(combinations):
+                logging.info(
+                    f"Training ensemble with features: {[f[1] for f in combo]}"
+                )
+                X = np.concatenate([f[0] for f in combo], axis=1)
+
+                dfy = pd.read_csv(path_to_labels)
+                y = dfy["img_category_num"].values
+
+                X_train = X[:1001]
+                X_val = X[1001:1201]
+
+                y_train = y[:1001]
+                y_val = y[1001:1201]
+
+                logging.info(f"Labels shape: {y.shape}")
+                logging.info(f"Features shape: {X.shape}")
+                logging.info(f"Train shape: {X_train.shape}, {y_train.shape}")
+                logging.info(f"Validation shape: {X_val.shape}, {y_val.shape}")
+
+                # Convert to DMatrix for XGBoost
+                dtrain = xgb.DMatrix(X_train, label=y_train)
+
+                # Train the model
+                bst = xgb.train(xgboost_params, dtrain, num_boost_round=128)
+
+                # Get Predictions
+                X_val_dmatrix = xgb.DMatrix(X_val)
+                predictions = bst.predict(X_val_dmatrix)
+                predicted_classes = np.argmax(predictions, axis=1)
+
+                # Get metric
+                acc = balanced_accuracy_score(y_val, predicted_classes)
+                logging.info(f"Balanced Accuracy: {acc}")
+                data.append([i, " ".join([f[1] for f in combo]), acc])
+
+    data.sort(key=lambda x: x[2], reverse=True)
+    ensure_dir("results/combinatorics")
+    save_combinatorics_data(
+        data, f"results/combinatorics/combinatorics_rcpd_features.csv"
+    )
+
+
 def train_ensemble_sentiment_combination(
     path_to_features, path_to_labels, feature_sizes
 ):
