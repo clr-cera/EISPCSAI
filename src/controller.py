@@ -66,6 +66,30 @@ class Controller:
                 path_to_labels="sentiment-dataset/annotations.csv",
                 feature_sizes=[4096, 1, 768, 768, 256, 384],
             )
+        if self.args.train_ensemble_rcpd:
+            model.ensemble.train_ensemble_rcpd(
+                path_to_features="features/rcpd_features.npy",
+                path_to_labels="rcpd/rcpd_annotations_processed.csv",
+                feature_sizes=[4096, 1, 768, 768, 256, 384],
+            )
+        if self.args.train_ensemble_rcpd_combinatorics:
+            model.ensemble.train_ensemble_rcpd_combination(
+                path_to_features="features/rcpd_features.npy",
+                path_to_labels="rcpd/rcpd_annotations_processed.csv",
+                feature_sizes=[4096, 1, 768, 768, 256, 384],
+            )
+        if self.args.train_ensemble_rcpd_pca:
+            model.ensemble.train_ensemble_rcpd(
+                path_to_features="features/pca_features.npy",
+                path_to_labels="rcpd/rcpd_annotations_processed.csv",
+                feature_sizes=[256, 1, 256, 256, 256, 256],
+            )
+        if self.args.train_ensemble_rcpd_combinatorics_pca:
+            model.ensemble.train_ensemble_rcpd_combination(
+                path_to_features="features/pca_features.npy",
+                path_to_labels="rcpd/rcpd_annotations_processed.csv",
+                feature_sizes=[256, 1, 256, 256, 256, 256],
+            )
         if self.args.train_ensemble_sentiment_pca:
             model.ensemble.train_ensemble_sentiment(
                 path_to_features="features/pca_features.npy",
@@ -196,6 +220,30 @@ def _parseArguments():
         "--train_ensemble_sentiment",
         help="When this option is set the sentiment dataset will be used to train ensemble model",
         dest="train_ensemble_sentiment",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--train_ensemble_rcpd",
+        help="When this option is set the rcpd dataset will be used to train ensemble model",
+        dest="train_ensemble_rcpd",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--train_ensemble_rcpd_combinatorics",
+        help="When this option is set the rcpd dataset will be used to train ensemble model with combinatorics to find optimal feature combination",
+        dest="train_ensemble_rcpd_combinatorics",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--train_ensemble_rcpd_pca",
+        help="When this option is set the rcpd dataset will be used to train ensemble model with pca features",
+        dest="train_ensemble_rcpd_pca",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--train_ensemble_rcpd_combinatorics_pca",
+        help="When this option is set the rcpd dataset will be used to train ensemble model with combinatorics on pca features to find optimal feature combination",
+        dest="train_ensemble_rcpd_combinatorics_pca",
         action="store_true",
     )
     parser.add_argument(
