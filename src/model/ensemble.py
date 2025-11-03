@@ -65,6 +65,10 @@ def train_ensemble_rcpd(path_to_features, path_to_labels, feature_sizes):
         "eval_metric": "mlogloss",
         "num_class": 6,
     }
+    experiment_name = "rcpd_ensemble"
+    if feature_sizes[0] == 256:
+        experiment_name += "_pca"
+
     X = np.load(path_to_features)
     dfy = pd.read_csv(path_to_labels)
     y = dfy["img_category_num"].values
@@ -87,7 +91,7 @@ def train_ensemble_rcpd(path_to_features, path_to_labels, feature_sizes):
     # Train the model
     bst = xgb.train(xgboost_params, dtrain, num_boost_round=128)
     ensure_dir("models/ensemble/")
-    bst.save_model("models/ensemble/ensemble_rcpd.model")
+    bst.save_model(f"models/ensemble/ensemble_{experiment_name}.model")
 
     # Get Predictions
     X_val_dmatrix = xgb.DMatrix(X_val)
@@ -99,7 +103,7 @@ def train_ensemble_rcpd(path_to_features, path_to_labels, feature_sizes):
     logging.info(f"Balanced Accuracy for RCPD ensemble: {acc}")
 
     save_confusion_matrix(
-        y_val, predicted_classes, img_name="confusion_matrix_rcpd.png"
+        y_val, predicted_classes, img_name=f"confusion_matrix_{experiment_name}.png"
     )
 
     # Calculate SHAP values and save plots
@@ -114,7 +118,9 @@ def train_ensemble_rcpd(path_to_features, path_to_labels, feature_sizes):
         nsfw_shap,
         scene_shap,
         thamiris_scene_shap,
-    ) = save_shap_plot(shap_values, acc, feature_sizes, "shap_plot_rcpd.png")
+    ) = save_shap_plot(
+        shap_values, acc, feature_sizes, f"shap_plot_rcpd_{experiment_name}.png"
+    )
 
     ensure_dir("results/")
     save_data(
@@ -129,7 +135,7 @@ def train_ensemble_rcpd(path_to_features, path_to_labels, feature_sizes):
                 thamiris_scene_shap,
             )
         ],
-        "results/results_rcpd.csv",
+        f"results/results_{experiment_name}.csv",
     )
 
 
@@ -143,6 +149,10 @@ def train_ensemble_rcpd_combination(path_to_features, path_to_labels, feature_si
         "eval_metric": "mlogloss",
         "num_class": 6,
     }
+
+    experiment_name = "rcpd_ensemble_combinatorics"
+    if feature_sizes[0] == 256:
+        experiment_name += "_pca"
 
     # Prepare features for combination
     feature_vectors = load_features(path_to_features, feature_sizes)
@@ -192,9 +202,7 @@ def train_ensemble_rcpd_combination(path_to_features, path_to_labels, feature_si
 
     data.sort(key=lambda x: x[2], reverse=True)
     ensure_dir("results/combinatorics")
-    save_combinatorics_data(
-        data, f"results/combinatorics/combinatorics_rcpd_features.csv"
-    )
+    save_combinatorics_data(data, f"results/combinatorics/{experiment_name}.csv")
 
 
 def train_ensemble_sentiment_combination(
