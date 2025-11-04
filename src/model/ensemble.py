@@ -73,11 +73,11 @@ def train_ensemble_rcpd(path_to_features, path_to_labels, feature_sizes):
     dfy = pd.read_csv(path_to_labels)
     y = dfy["img_category_num"].values
 
-    X_train = X[:1001]
-    X_val = X[1001:1201]
+    X_train = X[:1000]
+    X_val = X[1000:1200]
 
-    y_train = y[:1001]
-    y_val = y[1001:1201]
+    y_train = y[:1000]
+    y_val = y[1000:1200]
 
     logging.info(f"Training ensemble for RCPD dataset")
     logging.info(f"Labels shape: {y.shape}")
@@ -173,11 +173,11 @@ def train_ensemble_rcpd_combination(path_to_features, path_to_labels, feature_si
                 dfy = pd.read_csv(path_to_labels)
                 y = dfy["img_category_num"].values
 
-                X_train = X[:1001]
-                X_val = X[1001:1201]
+                X_train = X[:1000]
+                X_val = X[1000:1200]
 
-                y_train = y[:1001]
-                y_val = y[1001:1201]
+                y_train = y[:1000]
+                y_val = y[1000:1200]
 
                 logging.info(f"Labels shape: {y.shape}")
                 logging.info(f"Features shape: {X.shape}")
