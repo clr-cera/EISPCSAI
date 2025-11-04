@@ -69,25 +69,25 @@ class Controller:
         if self.args.train_ensemble_rcpd:
             model.ensemble.train_ensemble_rcpd(
                 path_to_features="features/rcpd_features.npy",
-                path_to_labels="rcpd/rcpd_annotations_processed.csv",
+                path_to_labels="rcpd/rcpd_annotation_processed.csv",
                 feature_sizes=[4096, 1, 768, 768, 256, 384],
             )
         if self.args.train_ensemble_rcpd_combinatorics:
             model.ensemble.train_ensemble_rcpd_combination(
                 path_to_features="features/rcpd_features.npy",
-                path_to_labels="rcpd/rcpd_annotations_processed.csv",
+                path_to_labels="rcpd/rcpd_annotation_processed.csv",
                 feature_sizes=[4096, 1, 768, 768, 256, 384],
             )
         if self.args.train_ensemble_rcpd_pca:
             model.ensemble.train_ensemble_rcpd(
                 path_to_features="features/pca_features.npy",
-                path_to_labels="rcpd/rcpd_annotations_processed.csv",
+                path_to_labels="rcpd/rcpd_annotation_processed.csv",
                 feature_sizes=[256, 1, 256, 256, 256, 256],
             )
         if self.args.train_ensemble_rcpd_combinatorics_pca:
             model.ensemble.train_ensemble_rcpd_combination(
                 path_to_features="features/pca_features.npy",
-                path_to_labels="rcpd/rcpd_annotations_processed.csv",
+                path_to_labels="rcpd/rcpd_annotation_processed.csv",
                 feature_sizes=[256, 1, 256, 256, 256, 256],
             )
         if self.args.train_ensemble_sentiment_pca:
