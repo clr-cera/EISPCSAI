@@ -165,7 +165,7 @@ def generate_tsne(
 
 
 def generate_tsne_rcpd(
-    perplexity, random_state=42, path_to_labels="rcpd/rcpd_annotations_processed.csv"
+    perplexity, random_state=42, path_to_labels="rcpd/rcpd_annotation_processed.csv"
 ):
     pca_features = np.load("features/pca_features.npy")
     logging.info(f"PCA features shape: {pca_features.shape}")
