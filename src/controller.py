@@ -131,6 +131,8 @@ class Controller:
 
         if self.args.generate_umap:
             model.process_features.generate_umap(n_neighbors=50, min_dist=0.1)
+        if self.args.generate_umap_rcpd:
+            model.process_features.generate_umap_rcpd(n_neighbors=50, min_dist=0.1)
 
     def test_separate(self):
         if self.args.test_object:

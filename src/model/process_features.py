@@ -237,6 +237,34 @@ def generate_umap(
     return umap_features
 
 
+def generate_umap_rcpd(
+    n_neighbors, min_dist, path_to_labels="rcpd/rcpd_annotation_processed.csv"
+):
+    pca_features = np.load("features/pca_features.npy")
+    logging.info(f"PCA features shape: {pca_features.shape}")
+    umap_model = umap.UMAP(
+        n_components=2,
+        n_neighbors=n_neighbors,
+        min_dist=min_dist,
+    )
+    umap_features = umap_model.fit_transform(pca_features)
+    np.save("features/umap_features.npy", umap_features)
+    logging.info(f"UMAP features shape: {umap_features.shape}")
+    logging.info("UMAP features saved to features/umap_features.npy")
+
+    dfy = pd.read_csv(path_to_labels)
+    label = dfy["img_category_num"].values
+
+    plt.scatter(umap_features[:, 0], umap_features[:, 1], s=1, c=label, cmap="viridis")
+    plt.title("UMAP Features")
+    ensure_dir("results/umap")
+    plt.savefig(f"results/umap/umap_features.png")
+    plt.clf()
+    logging.info(f"UMAP features plot saved to results/umap/umap_features.png")
+
+    return umap_features
+
+
 def generate_tsne_per_feature(
     perplexity,
     random_state=42,
