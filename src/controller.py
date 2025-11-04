@@ -304,4 +304,10 @@ def _parseArguments():
         dest="generate_umap",
         action="store_true",
     )
+    parser.add_argument(
+        "--generate_umap_rcpd",
+        help="When this option is set the rcpd dataset processed with pca will be used to generate umap features",
+        dest="generate_umap_rcpd",
+        action="store_true",
+    )
     return parser.parse_args()
