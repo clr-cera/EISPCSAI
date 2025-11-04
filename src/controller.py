@@ -123,6 +123,8 @@ class Controller:
         # Visualization
         if self.args.generate_tsne:
             model.process_features.generate_tsne(perplexity=30)
+        if self.args.generate_tsne_rcpd:
+            model.process_features.generate_tsne_rcpd(perplexity=30)
 
         if self.args.generate_tsne_per_feature:
             model.process_features.generate_tsne_per_feature(perplexity=30)
@@ -280,6 +282,12 @@ def _parseArguments():
         "--generate_tsne",
         help="When this option is set the dataset processed with pca will be used to generate tsne features",
         dest="generate_tsne",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--generate_tsne_rcpd",
+        help="When this option is set the rcpd dataset processed with pca will be used to generate tsne features",
+        dest="generate_tsne_rcpd",
         action="store_true",
     )
     parser.add_argument(
