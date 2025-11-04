@@ -272,6 +272,7 @@ def generate_tsne_per_feature(
     pca_features = load_features(
         "features/pca_features.npy", feature_sizes=[256, 1, 256, 256, 256, 256]
     )
+    print("aaaaa is it here?\n\n\n\n\n")
     feature_names = [
         "agegender",
         "ita",
