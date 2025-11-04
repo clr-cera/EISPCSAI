@@ -164,6 +164,35 @@ def generate_tsne(
     return tsne_features
 
 
+def generate_tsne_rcpd(
+    perplexity, random_state=42, path_to_labels="rcpd/rcpd_annotations.csv"
+):
+    pca_features = np.load("features/pca_features.npy")
+    logging.info(f"PCA features shape: {pca_features.shape}")
+    tsne_model = TSNE(
+        n_components=2,
+        perplexity=perplexity,
+        random_state=random_state,
+    )
+    tsne_features = tsne_model.fit_transform(pca_features)
+    np.save("features/tsne_features.npy", tsne_features)
+    logging.info(f"TSNE features shape: {tsne_features.shape}")
+    logging.info("KL divergence: " + str(tsne_model.kl_divergence_))
+    logging.info("TSNE features saved to features/tsne_features.npy")
+
+    dfy = pd.read_csv(path_to_labels)
+    label = dfy["img_category_num"].values
+
+    plt.scatter(tsne_features[:, 0], tsne_features[:, 1], s=1, c=label, cmap="viridis")
+    plt.title("TSNE Features")
+    ensure_dir("results/tsne")
+    plt.savefig(f"results/tsne/tsne_features.png")
+    plt.clf()
+    logging.info(f"TSNE features plot saved to results/tsne/tsne_features.png")
+
+    return tsne_features
+
+
 def generate_umap(
     n_neighbors, min_dist, path_to_labels="sentiment-dataset/annotations.csv"
 ):
