@@ -41,7 +41,7 @@ WORKDIR /src
 RUN pip install -U pip
 
 RUN pip install Cython
-RUN pip install -U git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI
+RUN pip install --no-build-isolation -U git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI
 RUN pip install git+https://github.com/facebookresearch/segment-anything.git
 
 # install MMCV
