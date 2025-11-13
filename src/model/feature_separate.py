@@ -136,11 +136,12 @@ def get_scene_vector(image):
     return feature
 
 
-def get_age_gender_vector(faces):
+def get_age_gender_vector(faces, model_age=None):
     tf.disable_v2_behavior()
-    model_age = model_from_json(
-        open("models/model_age/vgg16_agegender_model.json").read()
-    )
+    if model_age is None:
+        model_age = model_from_json(
+            open("models/model_age/vgg16_agegender_model.json").read()
+        )
 
     config = tf.ConfigProto(device_count={"GPU": 0})
     sess = tf.Session(config=config)
@@ -172,8 +173,9 @@ def get_age_gender_vector(faces):
     return feature
 
 
-def get_ita_vector(faces: list):
-    skinModel = SkinTone("models/fitzpatrick/shape_predictor_68_face_landmarks.dat")
+def get_ita_vector(faces: list, skinModel=None):
+    if skinModel is None:
+        skinModel = SkinTone("models/fitzpatrick/shape_predictor_68_face_landmarks.dat")
 
     config = tf.ConfigProto(device_count={"GPU": 0})
     sess = tf.Session(config=config)

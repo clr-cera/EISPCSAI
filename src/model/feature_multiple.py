@@ -11,6 +11,14 @@ from PIL import Image
 from tqdm import tqdm
 from .thamirismodel import vit_small
 
+import keras
+from keras.models import model_from_json
+
+from tensorflow import compat as compat
+from model.itamodel import SkinTone
+tf = compat.v1
+
+
 from model.feature_separate import get_age_gender_vector, get_ita_vector
 from utils import ensure_dir
 
@@ -18,16 +26,50 @@ from utils import ensure_dir
 def get_feature_vector(dataloader, path_to_store=None, torch_device=None):
     arr = None
     iteration = 0
+    
+    device = torch_device
+    
+    objects_model = YOLO("models/objects/yolov11.pt", verbose=False)
+    nsfw_processor = ViTImageProcessor.from_pretrained("AdamCodd/vit-base-nsfw-detector")
+    nsfw_model = AutoModelForImageClassification.from_pretrained(
+        "AdamCodd/vit-base-nsfw-detector"
+    ).to(device)
+    mtcnn_model = MTCNN(keep_all=True)
+    
+    tf.disable_v2_behavior()
+    age_model = model_from_json(
+        open("models/model_age/vgg16_agegender_model.json").read()
+    )
+    skin_model = SkinTone("models/fitzpatrick/shape_predictor_68_face_landmarks.dat")
+
+    # th architecture to use
+    arch = "alexnet"
+    # load the pre-trained weights
+    model_file = "models/scenes/alexnet_places365.pth.tar"
+    scene_model = torchvision.models.__dict__[arch](num_classes=365)
+    checkpoint = torch.load(model_file, map_location=lambda storage, loc: storage)
+    state_dict = {
+        str.replace(k, "module.", ""): v for k, v in checkpoint["state_dict"].items()
+    }
+    scene_model.load_state_dict(state_dict)
+    scene_model.eval()
+
+    scene_thamiris_model = vit_small(patch_size=16)
+    scene_thamiris_state_dict = torch.load(
+        "models/scenes_thamiris/thamiris_FSL_places600_best.pth", map_location=device
+    )
+    scene_thamiris_model.load_state_dict(scene_thamiris_state_dict, strict=False)
+
     for batch_images, _ in tqdm(dataloader):
         logging.info(f"Processing batch {iteration}")
         iteration += 1
         batch_arr = np.concatenate(
             (
-                get_faces_vector(batch_images),
-                get_objects_vector(batch_images),
-                get_nsfw_vector(batch_images, device=torch_device),
-                get_scene_vector(batch_images),
-                get_scene_thamiris_vector(batch_images, device=torch_device),
+                get_faces_vector(batch_images, mtcnn_model=mtcnn_model, model_age=age_model, skinModel=skin_model),
+                get_objects_vector(batch_images, model=objects_model),
+                get_nsfw_vector(batch_images, device=torch_device, processor=nsfw_processor, model=nsfw_model),
+                get_scene_vector(batch_images, model=scene_model),
+                get_scene_thamiris_vector(batch_images, device=torch_device, model=scene_thamiris_model),
             ),
             axis=1,
         )
@@ -44,13 +86,13 @@ def get_feature_vector(dataloader, path_to_store=None, torch_device=None):
     logging.info(f"Features saved to {path_to_store}")
 
 
-def get_faces_vector(batch):
+def get_faces_vector(batch, mtcnn_model=None, model_age=None, skinModel=None):
     batch_face_vector = []
     for i, img in enumerate(batch):
-        faces = get_face_imgs(img)
+        faces = get_face_imgs(img, mtcnn=mtcnn_model)
         if len(faces) != 0:
-            age_gender_vector = get_age_gender_vector(faces)
-            ita_vector = get_ita_vector(faces)
+            age_gender_vector = get_age_gender_vector(faces, model_age=model_age)
+            ita_vector = get_ita_vector(faces, skinModel=skinModel)
             face_vector = np.concatenate((ita_vector, age_gender_vector), axis=1)
         else:
             face_vector = np.zeros((1, 4097))  # Default vector if no faces detected
@@ -63,9 +105,11 @@ def get_faces_vector(batch):
     return batch_face_vector
 
 
-def get_face_imgs(img):
+def get_face_imgs(img, mtcnn=None):
     img = img.permute(1, 2, 0)  # Convert from CHW to HWC format
-    mtcnn = MTCNN(keep_all=True)
+    if mtcnn is None:
+        mtcnn = MTCNN(keep_all=True)
+        
     faces = mtcnn(img)
     # logging.info("FACES")
     if faces == None:
@@ -78,8 +122,10 @@ def get_face_imgs(img):
     return faces
 
 
-def get_objects_vector(batch):
-    model = YOLO("models/objects/yolov11.pt", verbose=False)
+def get_objects_vector(batch, model=None):
+    if model is None:
+        model = YOLO("models/objects/yolov11.pt", verbose=False)
+        
     layer = model.model.model[8]
     hook_handles = []
     features = []
@@ -102,11 +148,12 @@ def get_objects_vector(batch):
     return feature
 
 
-def get_nsfw_vector(batch, device=None):
-    processor = ViTImageProcessor.from_pretrained("AdamCodd/vit-base-nsfw-detector")
-    model = AutoModelForImageClassification.from_pretrained(
-        "AdamCodd/vit-base-nsfw-detector"
-    ).to(device)
+def get_nsfw_vector(batch, device=None, processor=None, model=None):
+    if processor is None or model is None:
+        processor = ViTImageProcessor.from_pretrained("AdamCodd/vit-base-nsfw-detector")
+        model = AutoModelForImageClassification.from_pretrained(
+            "AdamCodd/vit-base-nsfw-detector"
+        ).to(device)
 
     features = []
 
@@ -128,24 +175,24 @@ def get_nsfw_vector(batch, device=None):
     return feature
 
 
-def get_scene_vector(batch):
+def get_scene_vector(batch, model=None):
     features = []
 
     def hook(_, __, output):
         features.append(output.detach())
 
-    # th architecture to use
-    arch = "alexnet"
-
-    # load the pre-trained weights
-    model_file = "models/scenes/alexnet_places365.pth.tar"
-
-    model = torchvision.models.__dict__[arch](num_classes=365)
-    checkpoint = torch.load(model_file, map_location=lambda storage, loc: storage)
-    state_dict = {
-        str.replace(k, "module.", ""): v for k, v in checkpoint["state_dict"].items()
-    }
-    model.load_state_dict(state_dict)
+    if model is None:
+        # th architecture to use
+        arch = "alexnet"
+        # load the pre-trained weights
+        model_file = "models/scenes/alexnet_places365.pth.tar"
+        model = torchvision.models.__dict__[arch](num_classes=365)
+        checkpoint = torch.load(model_file, map_location=lambda storage, loc: storage)
+        state_dict = {
+            str.replace(k, "module.", ""): v for k, v in checkpoint["state_dict"].items()
+        }
+        model.load_state_dict(state_dict)
+    
     model.eval()
 
     # load the image transformer
@@ -187,14 +234,15 @@ def get_scene_vector(batch):
     return feature
 
 
-def get_scene_thamiris_vector(batch, device):
-    model = vit_small(patch_size=16)
-    state_dict = torch.load(
-        "models/scenes_thamiris/thamiris_FSL_places600_best.pth", map_location=device
-    )
-    model.load_state_dict(state_dict, strict=False)
+def get_scene_thamiris_vector(batch, device, model=None):
+    if model is None:
+        model = vit_small(patch_size=16)
+        state_dict = torch.load(
+            "models/scenes_thamiris/thamiris_FSL_places600_best.pth", map_location=device
+        )
+        model.load_state_dict(state_dict, strict=False)
+    
     model.to(device)
-
     batch = batch.float() / 255.0  # Normalize the batch
     batch = batch.to(device)
     with torch.no_grad():
