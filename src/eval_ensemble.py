@@ -101,7 +101,13 @@ def eval_ensemble():
 
     features = list(test_features.get_all_features().values())
     x_test = np.concatenate(features, axis=1)
-    test_metric, test_preds = ensemble_model.test_xgboost(x_test, test_labels, metric_function=lambda y_true, y_pred: balanced_accuracy_score(y_true, np.round(y_pred)))
+    test_metric, test_preds = ensemble_model.test_xgboost(
+        x_test,
+        test_labels,
+        metric_function=lambda y_true, y_pred: balanced_accuracy_score(
+            y_true, np.round(y_pred)
+        ),
+    )
     print(f"Test metric: {test_metric}")
     print("Plotting test confusion matrix...")
     confusion_matrix_save_path = "./results/ensemble/test_confusion_matrix.png"
@@ -212,7 +218,13 @@ def eval_ensemble_pca():
 
     features = list(test_features.get_all_features().values())
     x_test = np.concatenate(features, axis=1)
-    test_metric, test_preds = ensemble_model.test_xgboost(x_test, test_labels, metric_function=lambda y_true, y_pred: balanced_accuracy_score(y_true, np.round(y_pred)))
+    test_metric, test_preds = ensemble_model.test_xgboost(
+        x_test,
+        test_labels,
+        metric_function=lambda y_true, y_pred: balanced_accuracy_score(
+            y_true, np.round(y_pred)
+        ),
+    )
     print(f"Test metric: {test_metric}")
     print("Plotting test confusion matrix...")
     confusion_matrix_save_path = "./results/ensemble_pca/test_confusion_matrix.png"
@@ -572,12 +584,23 @@ def eval_ensemble_combinatorics():
         ensemble_combinatorics.best_true_labels,
     )
 
-    features = list(test_features.get_all_features()[name] for name in ensemble_combinatorics.best_feature_combination)
+    features = list(
+        test_features.get_all_features()[name]
+        for name in ensemble_combinatorics.best_feature_combination
+    )
     x_test = np.concatenate(features, axis=1)
-    test_metric, test_preds = ensemble_combinatorics.test_xgboost(x_test, test_labels, metric_function=lambda y_true, y_pred: balanced_accuracy_score(y_true, np.round(y_pred)))
+    test_metric, test_preds = ensemble_combinatorics.test_xgboost(
+        x_test,
+        test_labels,
+        metric_function=lambda y_true, y_pred: balanced_accuracy_score(
+            y_true, np.round(y_pred)
+        ),
+    )
     print(f"Test metric: {test_metric}")
     print("Plotting test confusion matrix...")
-    confusion_matrix_save_path = "./results/ensemble_combinatorics/test_confusion_matrix.png"
+    confusion_matrix_save_path = (
+        "./results/ensemble_combinatorics/test_confusion_matrix.png"
+    )
     visualization.plot_confusion_matrix(
         test_labels,
         np.round(test_preds),
@@ -694,12 +717,23 @@ def eval_ensemble_combinatorics_pca():
         ensemble_combinatorics.best_true_labels,
     )
 
-    features = list(test_features.get_all_features()[name] for name in ensemble_combinatorics.best_feature_combination)
+    features = list(
+        test_features.get_all_features()[name]
+        for name in ensemble_combinatorics.best_feature_combination
+    )
     x_test = np.concatenate(features, axis=1)
-    test_metric, test_preds = ensemble_combinatorics.test_xgboost(x_test, test_labels, metric_function=lambda y_true, y_pred: balanced_accuracy_score(y_true, np.round(y_pred)))
+    test_metric, test_preds = ensemble_combinatorics.test_xgboost(
+        x_test,
+        test_labels,
+        metric_function=lambda y_true, y_pred: balanced_accuracy_score(
+            y_true, np.round(y_pred)
+        ),
+    )
     print(f"Test metric: {test_metric}")
     print("Plotting test confusion matrix...")
-    confusion_matrix_save_path = "./results/ensemble_combinatorics_pca/test_confusion_matrix.png"
+    confusion_matrix_save_path = (
+        "./results/ensemble_combinatorics_pca/test_confusion_matrix.png"
+    )
     visualization.plot_confusion_matrix(
         test_labels,
         np.round(test_preds),
