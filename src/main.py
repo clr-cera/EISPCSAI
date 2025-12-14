@@ -1,5 +1,4 @@
 import os
-import shutil
 
 from download_models import download_models
 from extract_features import extract_dino_features, extract_features
