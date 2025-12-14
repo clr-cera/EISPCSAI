@@ -12,3 +12,5 @@ results/
 emissions
 rcpd*.csv
 rcpd/images
+persistent_pipeline_step.txt
+visualizations/

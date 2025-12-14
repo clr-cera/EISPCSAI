@@ -1,16 +1,52 @@
-import sys
-from controller import Controller
-import logging
-import time
+import os
+
+from download_models import download_models
+from extract_features import extract_features
+from visualizations import generate_visualizations
+from eval_ensemble import (
+    eval_ensemble,
+    eval_ensemble_pca,
+    eval_ensemble_kfold,
+    eval_ensemble_kfold_pca,
+    eval_ensemble_combinatorics,
+    eval_ensemble_combinatorics_pca,
+)
+
+PERSISTENT_PIPELINE_STEP_FILE = "persistent_pipeline_step.txt"
+
+PIPELINE_STEPS = [
+    download_models,
+    extract_features,
+    generate_visualizations,
+    eval_ensemble,
+    eval_ensemble_pca,
+    eval_ensemble_kfold,
+    eval_ensemble_kfold_pca,
+    eval_ensemble_combinatorics,
+    eval_ensemble_combinatorics_pca,
+]
+
+
+def main():
+    print("Starting pipeline for using eisp on rcpd dataset...")
+
+    # Get pipeline step from file
+    pipeline_step = 0
+    if os.path.exists(PERSISTENT_PIPELINE_STEP_FILE):
+        with open(PERSISTENT_PIPELINE_STEP_FILE, "r") as f:
+            pipeline_step = int(f.read().strip())
+        print(f"Resuming from pipeline step: {pipeline_step}")
+
+    for step in range(pipeline_step, len(PIPELINE_STEPS)):
+        print(f"Executing pipeline step {step}: {PIPELINE_STEPS[step].__name__}")
+        PIPELINE_STEPS[step]()
+
+        # Update the persistent pipeline step file
+        with open(PERSISTENT_PIPELINE_STEP_FILE, "w") as f:
+            f.write(str(step + 1))
+
+    print("Pipeline completed successfully.")
+
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-        handlers=[logging.FileHandler("log.txt"), logging.StreamHandler()],
-    )
-    controller = Controller()
-    start_time = time.time()
-    controller.start()
-    end_time = time.time()
-    logging.info(f"Total time taken: {end_time - start_time} seconds")
+    main()

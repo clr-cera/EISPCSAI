@@ -8,40 +8,39 @@ from torchvision import transforms as trn
 import torch
 from torch.autograd import Variable as V
 from PIL import Image
-from tqdm import tqdm
-from .thamirismodel import vit_small
+from model_scripts.thamirismodel import vit_small
 
 import keras
 from keras.models import model_from_json
 
 from tensorflow import compat as compat
-from model.itamodel import SkinTone
+from model_scripts.itamodel import SkinTone
+from tensorflow.python.keras import backend as K
+from skimage import transform
+
 tf = compat.v1
 
 
-from model.feature_separate import get_age_gender_vector, get_ita_vector
-from utils import ensure_dir
+mtcnn_model = MTCNN(keep_all=True)
 
 
-def get_feature_vector(dataloader, path_to_store=None, torch_device=None):
-    arr = None
-    iteration = 0
-    
-    device = torch_device
-    
+def get_object_model():
     objects_model = YOLO("models/objects/yolov11.pt", verbose=False)
-    nsfw_processor = ViTImageProcessor.from_pretrained("AdamCodd/vit-base-nsfw-detector")
+    return {"model": objects_model}
+
+
+def get_nsfw_model():
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    nsfw_processor = ViTImageProcessor.from_pretrained(
+        "AdamCodd/vit-base-nsfw-detector"
+    )
     nsfw_model = AutoModelForImageClassification.from_pretrained(
         "AdamCodd/vit-base-nsfw-detector"
     ).to(device)
-    mtcnn_model = MTCNN(keep_all=True)
-    
-    tf.disable_v2_behavior()
-    age_model = model_from_json(
-        open("models/model_age/vgg16_agegender_model.json").read()
-    )
-    skin_model = SkinTone("models/fitzpatrick/shape_predictor_68_face_landmarks.dat")
+    return {"device": device, "processor": nsfw_processor, "model": nsfw_model}
 
+
+def get_scene_model():
     # th architecture to use
     arch = "alexnet"
     # load the pre-trained weights
@@ -53,63 +52,116 @@ def get_feature_vector(dataloader, path_to_store=None, torch_device=None):
     }
     scene_model.load_state_dict(state_dict)
     scene_model.eval()
+    return {"model": scene_model}
 
+
+def get_scene_thamiris_model():
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     scene_thamiris_model = vit_small(patch_size=16)
     scene_thamiris_state_dict = torch.load(
         "models/scenes_thamiris/thamiris_FSL_places600_best.pth", map_location=device
     )
     scene_thamiris_model.load_state_dict(scene_thamiris_state_dict, strict=False)
+    return {"device": device, "model": scene_thamiris_model}
 
-    for batch_images, _ in tqdm(dataloader):
-        logging.info(f"Processing batch {iteration}")
-        iteration += 1
-        batch_arr = np.concatenate(
-            (
-                get_faces_vector(batch_images, mtcnn_model=mtcnn_model, model_age=age_model, skinModel=skin_model),
-                get_objects_vector(batch_images, model=objects_model),
-                get_nsfw_vector(batch_images, device=torch_device, processor=nsfw_processor, model=nsfw_model),
-                get_scene_vector(batch_images, model=scene_model),
-                get_scene_thamiris_vector(batch_images, device=torch_device, model=scene_thamiris_model),
-            ),
-            axis=1,
+
+def get_age_model():
+    tf.disable_v2_behavior()
+    age_model = model_from_json(
+        open("models/model_age/vgg16_agegender_model.json").read()
+    )
+    return {"mtcnn": mtcnn_model, "model": age_model}
+
+
+def get_ita_model():
+    skin_model = SkinTone("models/fitzpatrick/shape_predictor_68_face_landmarks.dat")
+    return {"mtcnn": mtcnn_model, "model": skin_model}
+
+
+def get_age_gender_vector(batch, mtcnn, model=None):
+
+    if model is None:
+        tf.disable_v2_behavior()
+        model = model_from_json(
+            open("models/model_age/vgg16_agegender_model.json").read()
         )
-        if arr is None:
-            arr = batch_arr
-        else:
-            arr = np.concatenate((arr, batch_arr), axis=0)
-        logging.info(
-            f"Batch {iteration} processed, images processed: {arr.shape[0]}, feature size: {arr.shape[1]}"
+
+    batch_age_gender_vector = []
+
+    config = tf.ConfigProto(device_count={"GPU": 0})
+    sess = tf.Session(config=config)
+    K.set_session(sess)
+
+    with sess:
+        model.load_weights("models/model_age/vgg16_agegender.hdf5")
+        feature_model = keras.Model(
+            inputs=model.input,
+            outputs=model.get_layer("fc2").output,
         )
 
-    ensure_dir(path_to_store.rsplit("/", 1)[0])
-    np.save(path_to_store, arr)
-    logging.info(f"Features saved to {path_to_store}")
+        for i, image in enumerate(batch):
+            faces = get_face_imgs(image, mtcnn=mtcnn)
+            features = []
+            if len(faces) != 0:
+                for face in faces:
+                    if face.shape[0] == 3:
+                        face = face.transpose((1, 2, 0))
+                    face = transform.resize(face, (128, 128))
+                    preds = model.predict(face[None, :, :, :])
+                    age = preds[0][0].tolist()
+                    index_with_max_prob = np.argmax(age)
+                    features.append(
+                        (
+                            index_with_max_prob,
+                            feature_model.predict(face[None, :, :, :]),
+                        )
+                    )
+                features = sorted(features, key=lambda x: x[0])
+                batch_age_gender_vector.append(features[0][1])
+
+            else:
+                batch_age_gender_vector.append(np.zeros((1, 4096)))
+    features = np.array(batch_age_gender_vector).squeeze()
+
+    return features
 
 
-def get_faces_vector(batch, mtcnn_model=None, model_age=None, skinModel=None):
-    batch_face_vector = []
-    for i, img in enumerate(batch):
-        faces = get_face_imgs(img, mtcnn=mtcnn_model)
-        if len(faces) != 0:
-            age_gender_vector = get_age_gender_vector(faces, model_age=model_age)
-            ita_vector = get_ita_vector(faces, skinModel=skinModel)
-            face_vector = np.concatenate((ita_vector, age_gender_vector), axis=1)
-        else:
-            face_vector = np.zeros((1, 4097))  # Default vector if no faces detected
-        # logging.info(f"Got face vector for {i} image: {face_vector.shape}")
-        batch_face_vector.append(face_vector)
-    batch_face_vector = np.array(batch_face_vector).squeeze()
-    logging.info("AgeGender and Ita feature processed")
-    logging.info(f"Batch face vector shape: {batch_face_vector.shape}")
-    # logging.info(f"Batch face vector shape: {batch_face_vector.shape}")
-    return batch_face_vector
+def get_ita_vector(batch, mtcnn, model=None):
+    if model is None:
+        model = SkinTone("models/fitzpatrick/shape_predictor_68_face_landmarks.dat")
+
+    batch_ita_vector = []
+
+    config = tf.ConfigProto(device_count={"GPU": 0})
+    sess = tf.Session(config=config)
+    K.set_session(sess)
+
+    with sess:
+        for i, image in enumerate(batch):
+            faces = get_face_imgs(image, mtcnn=mtcnn)
+            skin_ita = []
+            if len(faces) != 0:
+                for face in faces:
+                    if face.shape[0] == 3:
+                        face = face.transpose((1, 2, 0))
+                    ita, patch = model.ITA(face)
+                    skin_ita.append(ita)
+                skin_ita = np.array(skin_ita)
+                batch_ita_vector.append(
+                    np.mean(skin_ita, axis=0, keepdims=True).reshape((1, 1))
+                )
+            else:
+                batch_ita_vector.append(np.zeros((1, 1)))
+    features = np.array(batch_ita_vector).squeeze(axis=2)
+
+    return features
 
 
 def get_face_imgs(img, mtcnn=None):
     img = img.permute(1, 2, 0)  # Convert from CHW to HWC format
     if mtcnn is None:
         mtcnn = MTCNN(keep_all=True)
-        
+
     faces = mtcnn(img)
     # logging.info("FACES")
     if faces == None:
@@ -125,7 +177,7 @@ def get_face_imgs(img, mtcnn=None):
 def get_objects_vector(batch, model=None):
     if model is None:
         model = YOLO("models/objects/yolov11.pt", verbose=False)
-        
+
     layer = model.model.model[8]
     hook_handles = []
     features = []
@@ -189,10 +241,11 @@ def get_scene_vector(batch, model=None):
         model = torchvision.models.__dict__[arch](num_classes=365)
         checkpoint = torch.load(model_file, map_location=lambda storage, loc: storage)
         state_dict = {
-            str.replace(k, "module.", ""): v for k, v in checkpoint["state_dict"].items()
+            str.replace(k, "module.", ""): v
+            for k, v in checkpoint["state_dict"].items()
         }
         model.load_state_dict(state_dict)
-    
+
     model.eval()
 
     # load the image transformer
@@ -238,10 +291,11 @@ def get_scene_thamiris_vector(batch, device, model=None):
     if model is None:
         model = vit_small(patch_size=16)
         state_dict = torch.load(
-            "models/scenes_thamiris/thamiris_FSL_places600_best.pth", map_location=device
+            "models/scenes_thamiris/thamiris_FSL_places600_best.pth",
+            map_location=device,
         )
         model.load_state_dict(state_dict, strict=False)
-    
+
     model.to(device)
     batch = batch.float() / 255.0  # Normalize the batch
     batch = batch.to(device)
