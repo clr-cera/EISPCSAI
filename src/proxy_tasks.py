@@ -164,7 +164,7 @@ def get_face_imgs(img, mtcnn=None):
 
     faces = mtcnn(img)
     # logging.info("FACES")
-    if faces == None:
+    if faces is None:
         # logging.info("No faces detected")
         return []
 
