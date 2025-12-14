@@ -14,7 +14,7 @@ def generate_visualizations():
     pca_features = features.apply_pca()
 
     for feature_name, feature_vector in pca_features.get_all_features().items():
-        print(f"Feature: {feature_name}, Shape: {feature_vector.shape}")
+        print(f"Feature after PCA: {feature_name}, Shape: {feature_vector.shape}")
 
     if not os.path.exists("visualizations/"):
         os.makedirs("visualizations/")

@@ -18,12 +18,12 @@ def eval_ensemble():
     for feature_name, feature_vector in feature_vectors.get_all_features().items():
         print(f"Feature: {feature_name}, Shape: {feature_vector.shape}")
 
-    train_features, _test_features, train_indices, test_indices = (
+    train_features, test_features, train_indices, test_indices = (
         feature_vectors.train_test_split(test_size=0.2, random_state=42)
     )
 
     train_labels: np.ndarray = labels[train_indices]
-    _test_labels = labels[test_indices]
+    test_labels = labels[test_indices]
 
     for feature_name, feature_vector in train_features.get_all_features().items():
         print(f"Train Feature: {feature_name}, Shape: {feature_vector.shape}")
@@ -99,6 +99,25 @@ def eval_ensemble():
     with open("./results/ensemble/val_metric.txt", "w") as f:
         f.write(str(ensemble_model.val_metric))
 
+    features = list(test_features.get_all_features().values())
+    x_test = np.concatenate(features, axis=1)
+    test_metric, test_preds = ensemble_model.test_xgboost(x_test, test_labels, metric_function=lambda y_true, y_pred: balanced_accuracy_score(y_true, np.round(y_pred)))
+    print(f"Test metric: {test_metric}")
+    print("Plotting test confusion matrix...")
+    confusion_matrix_save_path = "./results/ensemble/test_confusion_matrix.png"
+    visualization.plot_confusion_matrix(
+        test_labels,
+        np.round(test_preds),
+        class_names=["Non-CSAM", "CSAM"],
+        save_path=confusion_matrix_save_path,
+    )
+    print(f"Test confusion matrix plot saved to {confusion_matrix_save_path}")
+
+    # saving test preds and test metric
+    np.save("./results/ensemble/test_pred_labels.npy", test_preds)
+    with open("./results/ensemble/test_metric.txt", "w") as f:
+        f.write(str(test_metric))
+
 
 def eval_ensemble_pca():
     feature_vectors: proxy_tasks.FeatureVectors = proxy_tasks.FeatureVectors.from_files(
@@ -114,12 +133,12 @@ def eval_ensemble_pca():
     for feature_name, feature_vector in feature_vectors.get_all_features().items():
         print(f"Feature: {feature_name}, Shape: {feature_vector.shape}")
 
-    train_features, _test_features, train_indices, test_indices = (
+    train_features, test_features, train_indices, test_indices = (
         feature_vectors.train_test_split(test_size=0.2, random_state=42)
     )
 
     train_labels: np.ndarray = labels[train_indices]
-    _test_labels = labels[test_indices]
+    test_labels = labels[test_indices]
 
     for feature_name, feature_vector in train_features.get_all_features().items():
         print(f"Train Feature: {feature_name}, Shape: {feature_vector.shape}")
@@ -190,6 +209,25 @@ def eval_ensemble_pca():
     # save val metric
     with open("./results/ensemble_pca/val_metric.txt", "w") as f:
         f.write(str(ensemble_model.val_metric))
+
+    features = list(test_features.get_all_features().values())
+    x_test = np.concatenate(features, axis=1)
+    test_metric, test_preds = ensemble_model.test_xgboost(x_test, test_labels, metric_function=lambda y_true, y_pred: balanced_accuracy_score(y_true, np.round(y_pred)))
+    print(f"Test metric: {test_metric}")
+    print("Plotting test confusion matrix...")
+    confusion_matrix_save_path = "./results/ensemble_pca/test_confusion_matrix.png"
+    visualization.plot_confusion_matrix(
+        test_labels,
+        np.round(test_preds),
+        class_names=["Non-CSAM", "CSAM"],
+        save_path=confusion_matrix_save_path,
+    )
+    print(f"Test confusion matrix plot saved to {confusion_matrix_save_path}")
+
+    # saving test preds and test metric
+    np.save("./results/ensemble_pca/test_pred_labels.npy", test_preds)
+    with open("./results/ensemble_pca/test_metric.txt", "w") as f:
+        f.write(str(test_metric))
 
 
 def eval_ensemble_kfold():
@@ -450,12 +488,12 @@ def eval_ensemble_combinatorics():
     for feature_name, feature_vector in feature_vectors.get_all_features().items():
         print(f"Feature: {feature_name}, Shape: {feature_vector.shape}")
 
-    train_features, _test_features, train_indices, test_indices = (
+    train_features, test_features, train_indices, test_indices = (
         feature_vectors.train_test_split(test_size=0.2, random_state=42)
     )
 
     train_labels: np.ndarray = labels[train_indices]
-    _test_labels = labels[test_indices]
+    test_labels = labels[test_indices]
 
     for feature_name, feature_vector in train_features.get_all_features().items():
         print(f"Train Feature: {feature_name}, Shape: {feature_vector.shape}")
@@ -534,6 +572,25 @@ def eval_ensemble_combinatorics():
         ensemble_combinatorics.best_true_labels,
     )
 
+    features = list(test_features.get_all_features()[name] for name in ensemble_combinatorics.best_feature_combination)
+    x_test = np.concatenate(features, axis=1)
+    test_metric, test_preds = ensemble_combinatorics.test_xgboost(x_test, test_labels, metric_function=lambda y_true, y_pred: balanced_accuracy_score(y_true, np.round(y_pred)))
+    print(f"Test metric: {test_metric}")
+    print("Plotting test confusion matrix...")
+    confusion_matrix_save_path = "./results/ensemble_combinatorics/test_confusion_matrix.png"
+    visualization.plot_confusion_matrix(
+        test_labels,
+        np.round(test_preds),
+        class_names=["Non-CSAM", "CSAM"],
+        save_path=confusion_matrix_save_path,
+    )
+    print(f"Test confusion matrix plot saved to {confusion_matrix_save_path}")
+
+    # saving test preds and test metric
+    np.save("./results/ensemble_combinatorics/test_pred_labels.npy", test_preds)
+    with open("./results/ensemble_combinatorics/test_metric.txt", "w") as f:
+        f.write(str(test_metric))
+
 
 def eval_ensemble_combinatorics_pca():
     feature_vectors: proxy_tasks.FeatureVectors = proxy_tasks.FeatureVectors.from_files(
@@ -549,12 +606,12 @@ def eval_ensemble_combinatorics_pca():
     for feature_name, feature_vector in feature_vectors.get_all_features().items():
         print(f"Feature: {feature_name}, Shape: {feature_vector.shape}")
 
-    train_features, _test_features, train_indices, test_indices = (
+    train_features, test_features, train_indices, test_indices = (
         feature_vectors.train_test_split(test_size=0.2, random_state=42)
     )
 
     train_labels: np.ndarray = labels[train_indices]
-    _test_labels = labels[test_indices]
+    test_labels = labels[test_indices]
 
     for feature_name, feature_vector in train_features.get_all_features().items():
         print(f"Train Feature: {feature_name}, Shape: {feature_vector.shape}")
@@ -636,3 +693,22 @@ def eval_ensemble_combinatorics_pca():
         "./results/ensemble_combinatorics_pca/true_labels.npy",
         ensemble_combinatorics.best_true_labels,
     )
+
+    features = list(test_features.get_all_features()[name] for name in ensemble_combinatorics.best_feature_combination)
+    x_test = np.concatenate(features, axis=1)
+    test_metric, test_preds = ensemble_combinatorics.test_xgboost(x_test, test_labels, metric_function=lambda y_true, y_pred: balanced_accuracy_score(y_true, np.round(y_pred)))
+    print(f"Test metric: {test_metric}")
+    print("Plotting test confusion matrix...")
+    confusion_matrix_save_path = "./results/ensemble_combinatorics_pca/test_confusion_matrix.png"
+    visualization.plot_confusion_matrix(
+        test_labels,
+        np.round(test_preds),
+        class_names=["Non-CSAM", "CSAM"],
+        save_path=confusion_matrix_save_path,
+    )
+    print(f"Test confusion matrix plot saved to {confusion_matrix_save_path}")
+
+    # saving test preds and test metric
+    np.save("./results/ensemble_combinatorics_pca/test_pred_labels.npy", test_preds)
+    with open("./results/ensemble_combinatorics_pca/test_metric.txt", "w") as f:
+        f.write(str(test_metric))
