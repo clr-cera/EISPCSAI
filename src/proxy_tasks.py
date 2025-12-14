@@ -29,6 +29,17 @@ def get_object_model():
     return {"model": objects_model}
 
 
+def get_pose_model():
+    pose_model = YOLO("models/pose/yolov11pose.pt", verbose=False)
+    return {"model": pose_model}
+
+
+def get_dino_model():
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    dino_model = torch.hub.load("facebookresearch/dino:main", "dino_vits8").to(device)
+    return {"device": device, "model": dino_model}
+
+
 def get_nsfw_model():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     nsfw_processor = ViTImageProcessor.from_pretrained(
@@ -200,6 +211,32 @@ def get_objects_vector(batch, model=None):
     return feature
 
 
+def get_pose_vector(batch, model=None):
+    if model is None:
+        model = YOLO("models/pose/yolov11pose.pt", verbose=False)
+
+    layer = model.model.model[8]
+    hook_handles = []
+    features = []
+
+    def hook(_, __, output):
+        features.append(output.detach())
+
+    hook_handles.append(layer.register_forward_hook(hook))
+    batch = batch.float() / 255.0  # Normalize the batch
+
+    model(batch)
+
+    for handle in hook_handles:
+        handle.remove()
+    logging.info("Pose estimation feature processed")
+    feature = features[-1]
+    feature = feature.reshape((feature.shape[0], feature.shape[1], -1)).mean(dim=(2))
+    feature = feature.cpu().numpy()
+    logging.info(f"Pose feature shape: {feature.shape}")
+    return feature
+
+
 def get_nsfw_vector(batch, device=None, processor=None, model=None):
     if processor is None or model is None:
         processor = ViTImageProcessor.from_pretrained("AdamCodd/vit-base-nsfw-detector")
@@ -302,6 +339,28 @@ def get_scene_thamiris_vector(batch, device, model=None):
     with torch.no_grad():
         feature = model(batch)
     logging.info("Scene Classification with Thamiris Few Shot Model feature processed")
+    logging.info(feature.shape)
+    feature = feature.cpu().numpy()
+    return feature
+
+
+def get_dino_vector(batch, device, model=None):
+    if model is None:
+        model = torch.hub.load("facebookresearch/dino:main", "dino_vits8").to(device)
+
+    model.to(device)
+    transform = trn.Compose(
+        [
+            trn.Resize((224, 224)),
+            trn.ToTensor(),
+            trn.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ]
+    )
+
+    batch = batch.to(device)
+    with torch.no_grad():
+        feature = model(batch)
+    logging.info("DINO feature processed")
     logging.info(feature.shape)
     feature = feature.cpu().numpy()
     return feature

@@ -1,7 +1,8 @@
 import os
+import shutil
 
 from download_models import download_models
-from extract_features import extract_features
+from extract_features import extract_dino_features, extract_features
 from visualizations import generate_visualizations
 from eval_ensemble import (
     eval_ensemble,
@@ -17,6 +18,17 @@ PERSISTENT_PIPELINE_STEP_FILE = "persistent_pipeline_step.txt"
 PIPELINE_STEPS = [
     download_models,
     extract_features,
+    generate_visualizations,
+    eval_ensemble,
+    eval_ensemble_pca,
+    eval_ensemble_kfold,
+    eval_ensemble_kfold_pca,
+    eval_ensemble_combinatorics,
+    eval_ensemble_combinatorics_pca,
+]
+
+PIPELINE_STEPS_DINO_ONLY = [
+    extract_dino_features,
     generate_visualizations,
     eval_ensemble,
     eval_ensemble_pca,
@@ -44,6 +56,22 @@ def main():
         # Update the persistent pipeline step file
         with open(PERSISTENT_PIPELINE_STEP_FILE, "w") as f:
             f.write(str(step + 1))
+
+    # Now using only dino as feature
+
+    for step in range(
+        max(pipeline_step, len(PIPELINE_STEPS)),
+        len(PIPELINE_STEPS_DINO_ONLY) + len(PIPELINE_STEPS),
+    ):
+        step = step - len(PIPELINE_STEPS)
+        print(
+            f"Executing pipeline step {step}: {PIPELINE_STEPS_DINO_ONLY[step].__name__}"
+        )
+        PIPELINE_STEPS_DINO_ONLY[step]()
+
+        # Update the persistent pipeline step file
+        with open(PERSISTENT_PIPELINE_STEP_FILE, "w") as f:
+            f.write(str(step + len(PIPELINE_STEPS) + 1))
 
     print("Pipeline completed successfully.")
 

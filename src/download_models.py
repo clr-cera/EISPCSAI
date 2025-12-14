@@ -13,6 +13,13 @@ def download_models():
         "models/objects/yolov11.pt",
     )
 
+    # Yolov11Pose.pt
+    os.makedirs("models/pose/", exist_ok=True)
+    download_wget(
+        "https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11x-pose.pt",
+        "models/pose/yolov11pose.pt",
+    )
+
     # Places365
     os.makedirs("models/scenes/", exist_ok=True)
     download_wget(
