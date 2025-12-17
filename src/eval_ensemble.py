@@ -9,6 +9,8 @@ def eval_ensemble():
     feature_vectors: proxy_tasks.FeatureVectors = proxy_tasks.FeatureVectors.from_files(
         "./features"
     )
+    np.nan_to_num(feature_vectors.get_all_features()["Age_Gender"], copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+
     labels = (pd.read_csv("rcpd/rcpd_annotation_fix.csv")["csam"] * 1).to_numpy()
 
     print(
@@ -129,8 +131,11 @@ def eval_ensemble_pca():
     feature_vectors: proxy_tasks.FeatureVectors = proxy_tasks.FeatureVectors.from_files(
         "./features"
     )
+    np.nan_to_num(feature_vectors.get_all_features()["Age_Gender"], copy=False, nan=0.0, posinf=0.0, neginf=0.0)
     labels = (pd.read_csv("rcpd/rcpd_annotation_fix.csv")["csam"] * 1).to_numpy()
+
     feature_vectors = feature_vectors.apply_pca()
+    np.nan_to_num(feature_vectors.get_all_features()["Age_Gender"], copy=False, nan=0.0, posinf=0.0, neginf=0.0)
 
     print(
         f"Feature vectors loaded with features: {list(feature_vectors.get_all_features().keys())}"
@@ -246,6 +251,7 @@ def eval_ensemble_kfold():
     feature_vectors: proxy_tasks.FeatureVectors = proxy_tasks.FeatureVectors.from_files(
         "./features"
     )
+    np.nan_to_num(feature_vectors.get_all_features()["Age_Gender"], copy=False, nan=0.0, posinf=0.0, neginf=0.0)
     labels = (pd.read_csv("rcpd/rcpd_annotation_fix.csv")["csam"] * 1).to_numpy()
     print(
         f"Feature vectors loaded with features: {list(feature_vectors.get_all_features().keys())}"
@@ -367,8 +373,10 @@ def eval_ensemble_kfold_pca():
     feature_vectors: proxy_tasks.FeatureVectors = proxy_tasks.FeatureVectors.from_files(
         "./features"
     )
+    np.nan_to_num(feature_vectors.get_all_features()["Age_Gender"], copy=False, nan=0.0, posinf=0.0, neginf=0.0)
     labels = (pd.read_csv("rcpd/rcpd_annotation_fix.csv")["csam"] * 1).to_numpy()
     feature_vectors = feature_vectors.apply_pca()
+    np.nan_to_num(feature_vectors.get_all_features()["Age_Gender"], copy=False, nan=0.0, posinf=0.0, neginf=0.0)
 
     print(
         f"Feature vectors loaded with features: {list(feature_vectors.get_all_features().keys())}"
@@ -491,6 +499,7 @@ def eval_ensemble_combinatorics():
     feature_vectors: proxy_tasks.FeatureVectors = proxy_tasks.FeatureVectors.from_files(
         "./features"
     )
+    np.nan_to_num(feature_vectors.get_all_features()["Age_Gender"], copy=False, nan=0.0, posinf=0.0, neginf=0.0)
     labels = (pd.read_csv("rcpd/rcpd_annotation_fix.csv")["csam"] * 1).to_numpy()
 
     print(
@@ -619,7 +628,11 @@ def eval_ensemble_combinatorics_pca():
     feature_vectors: proxy_tasks.FeatureVectors = proxy_tasks.FeatureVectors.from_files(
         "./features"
     )
+
+    np.nan_to_num(feature_vectors.get_all_features()["Age_Gender"], copy=False, nan=0.0, posinf=0.0, neginf=0.0)
     feature_vectors = feature_vectors.apply_pca()
+    np.nan_to_num(feature_vectors.get_all_features()["Age_Gender"], copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+
     labels = (pd.read_csv("rcpd/rcpd_annotation_fix.csv")["csam"] * 1).to_numpy()
 
     print(
