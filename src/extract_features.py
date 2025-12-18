@@ -37,17 +37,15 @@ PROXY_FEATURES_FUNCTIONS = [
     get_scene_thamiris_vector,
     get_age_gender_vector,
     get_ita_vector,
-    # lambda batch, **kwargs: batch.view(batch.size(0), -1).numpy()
 ]
 PROXY_FEATURES_NAMES = [
     "Pose",
     "Nudity",
     "Objects",
-    "Scenes",
-    "Scenes_Thamiris",
+    "Scenes_Places",
+    "Scenes_Coelho_Et_Al",
     "Age_Gender",
     "ITA",
-    # "Image_Raw",
 ]
 PROXY_FEATURES_ARGUMENTS_GENERATORS = [
     get_pose_model,
@@ -57,7 +55,6 @@ PROXY_FEATURES_ARGUMENTS_GENERATORS = [
     get_scene_thamiris_model,
     get_age_model,
     get_ita_model,
-    # lambda:None
 ]
 
 
@@ -103,7 +100,9 @@ def extract_features():
 
     prepend_img_dir = input("Input the path to the RCPD images directory: ")
 
-    rcpd_dataloader = get_rcpd_dataloader(prepend_img_dir=prepend_img_dir, shuffle=False)
+    rcpd_dataloader = get_rcpd_dataloader(
+        prepend_img_dir=prepend_img_dir, shuffle=False
+    )
 
     proxy_features_arguments = [gen() for gen in PROXY_FEATURES_ARGUMENTS_GENERATORS]
 

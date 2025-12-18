@@ -9,8 +9,9 @@ def generate_visualizations():
         "./features"
     )
     for feature_name, feature_vector in features.get_all_features().items():
-        features.get_all_features()[feature_name] = np.nan_to_num(feature_vector, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
-
+        features.get_all_features()[feature_name] = np.nan_to_num(
+            feature_vector, copy=False, nan=0.0, posinf=0.0, neginf=0.0
+        )
 
     for feature_name, feature_vector in features.get_all_features().items():
         print(f"Feature: {feature_name}, Shape: {feature_vector.shape}")
@@ -18,9 +19,9 @@ def generate_visualizations():
     pca_features = features.apply_pca()
 
     for feature_name, feature_vector in features.get_all_features().items():
-        print(f"Feature name after NaN handling: {feature_name}, Nan count: {np.isnan(feature_vector).sum()}")
-
-
+        print(
+            f"Feature name after NaN handling: {feature_name}, Nan count: {np.isnan(feature_vector).sum()}"
+        )
 
     for feature_name, feature_vector in pca_features.get_all_features().items():
         print(f"Feature after PCA: {feature_name}, Shape: {feature_vector.shape}")

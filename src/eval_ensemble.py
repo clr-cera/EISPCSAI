@@ -10,7 +10,9 @@ def eval_ensemble():
         "./features"
     )
     for feature_name, feature_vector in feature_vectors.get_all_features().items():
-        feature_vectors.get_all_features()[feature_name] = np.nan_to_num(feature_vector, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+        feature_vectors.get_all_features()[feature_name] = np.nan_to_num(
+            feature_vector, copy=False, nan=0.0, posinf=0.0, neginf=0.0
+        )
 
     labels = (pd.read_csv("rcpd/rcpd_annotation_fix.csv")["csam"] * 1).to_numpy()
 
@@ -133,7 +135,9 @@ def eval_ensemble_pca():
         "./features"
     )
     for feature_name, feature_vector in feature_vectors.get_all_features().items():
-        feature_vectors.get_all_features()[feature_name] = np.nan_to_num(feature_vector, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+        feature_vectors.get_all_features()[feature_name] = np.nan_to_num(
+            feature_vector, copy=False, nan=0.0, posinf=0.0, neginf=0.0
+        )
 
     labels = (pd.read_csv("rcpd/rcpd_annotation_fix.csv")["csam"] * 1).to_numpy()
 
@@ -255,8 +259,10 @@ def eval_ensemble_kfold():
     )
 
     for feature_name, feature_vector in feature_vectors.get_all_features().items():
-        feature_vectors.get_all_features()[feature_name] = np.nan_to_num(feature_vector, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
-    
+        feature_vectors.get_all_features()[feature_name] = np.nan_to_num(
+            feature_vector, copy=False, nan=0.0, posinf=0.0, neginf=0.0
+        )
+
     labels = (pd.read_csv("rcpd/rcpd_annotation_fix.csv")["csam"] * 1).to_numpy()
     print(
         f"Feature vectors loaded with features: {list(feature_vectors.get_all_features().keys())}"
@@ -380,11 +386,13 @@ def eval_ensemble_kfold_pca():
     )
 
     for feature_name, feature_vector in feature_vectors.get_all_features().items():
-        feature_vectors.get_all_features()[feature_name] = np.nan_to_num(feature_vector, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
-    
+        feature_vectors.get_all_features()[feature_name] = np.nan_to_num(
+            feature_vector, copy=False, nan=0.0, posinf=0.0, neginf=0.0
+        )
+
     labels = (pd.read_csv("rcpd/rcpd_annotation_fix.csv")["csam"] * 1).to_numpy()
     feature_vectors = feature_vectors.apply_pca()
-    
+
     print(
         f"Feature vectors loaded with features: {list(feature_vectors.get_all_features().keys())}"
     )
@@ -508,8 +516,10 @@ def eval_ensemble_combinatorics():
     )
 
     for feature_name, feature_vector in feature_vectors.get_all_features().items():
-        feature_vectors.get_all_features()[feature_name] = np.nan_to_num(feature_vector, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
-    
+        feature_vectors.get_all_features()[feature_name] = np.nan_to_num(
+            feature_vector, copy=False, nan=0.0, posinf=0.0, neginf=0.0
+        )
+
     labels = (pd.read_csv("rcpd/rcpd_annotation_fix.csv")["csam"] * 1).to_numpy()
 
     print(
@@ -640,7 +650,9 @@ def eval_ensemble_combinatorics_pca():
     )
 
     for feature_name, feature_vector in feature_vectors.get_all_features().items():
-        feature_vectors.get_all_features()[feature_name] = np.nan_to_num(feature_vector, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+        feature_vectors.get_all_features()[feature_name] = np.nan_to_num(
+            feature_vector, copy=False, nan=0.0, posinf=0.0, neginf=0.0
+        )
 
     feature_vectors = feature_vectors.apply_pca()
 
