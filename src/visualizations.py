@@ -8,13 +8,18 @@ def generate_visualizations():
     features: proxy_tasks.FeatureVectors = proxy_tasks.FeatureVectors.from_files(
         "./features"
     )
-    np.nan_to_num(features.get_all_features()["Age_Gender"], copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+    features.get_all_features()['Age_Gender'] = np.nan_to_num(features.get_all_features()["Age_Gender"], copy=False, nan=0.0, posinf=0.0, neginf=0.0)
 
     for feature_name, feature_vector in features.get_all_features().items():
         print(f"Feature: {feature_name}, Shape: {feature_vector.shape}")
 
     pca_features = features.apply_pca()
-    np.nan_to_num(pca_features.get_all_features()["Age_Gender"], copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+    features.get_all_features()['Age_Gender'] = np.nan_to_num(features.get_all_features()["Age_Gender"], copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+
+    for feature_name, feature_vector in features.get_all_features().items():
+        print(f"Feature name after NaN handling: {feature_name}, Nan count: {np.isnan(feature_vector).sum()}")
+
+
 
     for feature_name, feature_vector in pca_features.get_all_features().items():
         print(f"Feature after PCA: {feature_name}, Shape: {feature_vector.shape}")
