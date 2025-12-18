@@ -64,7 +64,7 @@ def main():
     ):
         step = step - len(PIPELINE_STEPS)
         print(
-            f"Executing pipeline step {step}: {PIPELINE_STEPS_DINO_ONLY[step].__name__}"
+            f"Executing pipeline step {step+len(PIPELINE_STEPS)}: {PIPELINE_STEPS_DINO_ONLY[step].__name__}"
         )
         PIPELINE_STEPS_DINO_ONLY[step]()
 

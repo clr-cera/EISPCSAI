@@ -91,7 +91,7 @@ class RCPDDataloader(Dataset):
 
 
 def get_rcpd_dataloader(
-    prepend_img_dir: str, batch_size=32, shuffle=True, transform=None
+    prepend_img_dir: str, batch_size=32, shuffle=False, transform=None
 ):
     dataset = RCPDDataloader(prepend_img_dir=prepend_img_dir, transform=transform)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
@@ -103,7 +103,7 @@ def extract_features():
 
     prepend_img_dir = input("Input the path to the RCPD images directory: ")
 
-    rcpd_dataloader = get_rcpd_dataloader(prepend_img_dir=prepend_img_dir)
+    rcpd_dataloader = get_rcpd_dataloader(prepend_img_dir=prepend_img_dir, shuffle=False)
 
     proxy_features_arguments = [gen() for gen in PROXY_FEATURES_ARGUMENTS_GENERATORS]
 
@@ -139,7 +139,7 @@ def extract_dino_features():
     )
 
     rcpd_dataloader = get_rcpd_dataloader(
-        prepend_img_dir=prepend_img_dir, transform=transform_dino
+        prepend_img_dir=prepend_img_dir, transform=transform_dino, shuffle=False
     )
 
     store_path = "./features"
