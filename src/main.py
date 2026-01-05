@@ -1,5 +1,5 @@
 import os
-
+from codecarbon import track_emissions
 from download_models import download_models
 from extract_features import extract_dino_features, extract_features
 from visualizations import generate_visualizations
@@ -36,8 +36,12 @@ PIPELINE_STEPS_DINO_ONLY = [
     eval_ensemble_combinatorics,
     eval_ensemble_combinatorics_pca,
 ]
-
-
+os.makedirs("emissions_logs", exist_ok=True)
+@track_emissions(
+        project_name="EISP on RCPD",
+        output_dir="emissions_logs",
+        log_level="error",
+)
 def main():
     print("Starting pipeline for using eisp on rcpd dataset...")
 

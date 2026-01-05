@@ -43,9 +43,9 @@ PROXY_FEATURES_NAMES = [
     "Nudity",
     "Objects",
     "Scenes_Places",
-    "Scenes_Coelho_Et_Al",
+    "Scenes_Few_Shot",
     "Age_Gender",
-    "ITA",
+    "ITA_Skin_Tone",
 ]
 PROXY_FEATURES_ARGUMENTS_GENERATORS = [
     get_pose_model,

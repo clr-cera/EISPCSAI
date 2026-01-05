@@ -75,6 +75,11 @@ def eval_ensemble():
     np.save("./results/train_indices.npy", train_indices)
     np.save("./results/test_indices.npy", test_indices)
 
+    print("Saving feature vectors sizes:")
+    with open("./results/ensemble/feature_vector_sizes.txt", "w") as f:
+        for feature_name, feature_vector in feature_vectors.get_all_features().items():
+            f.write(f"Feature: {feature_name}, Shape: {feature_vector.shape}\n")
+
     # Plot feature importance
     feature_importance_save_path = "./results/ensemble/feature_importance.png"
     visualization.plot_feature_importance(
@@ -197,6 +202,11 @@ def eval_ensemble_pca():
 
     if not os.path.exists("results/ensemble_pca/"):
         os.makedirs("results/ensemble_pca/")
+
+    print("Saving feature vectors sizes after PCA:")
+    with open("./results/ensemble_pca/pca_feature_vector_sizes.txt", "w") as f:
+        for feature_name, feature_vector in feature_vectors.get_all_features().items():
+            f.write(f"Feature: {feature_name}, Shape: {feature_vector.shape}\n")
 
     # Plot feature importance
     feature_importance_save_path = "./results/ensemble_pca/feature_importance.png"
