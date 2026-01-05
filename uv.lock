@@ -664,7 +664,7 @@ sdist = { url = "https://files.pythonhosted.org/packages/ef/ce/e1c3a58dd0ac8f04b
 
 [[package]]
 name = "eisp"
-version = "0.3.7"
+version = "0.3.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "joblib" },
@@ -680,9 +680,9 @@ dependencies = [
     { name = "umap-learn" },
     { name = "xgboost" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f8/fb/1948f468633643a230ec71f947fb20b1d31e28c0f3aba0d80deed7e7c23c/eisp-0.3.7.tar.gz", hash = "sha256:61d825af3cde883081a3614833e6e0228b59804abd1c26d457c3ccb6b6ba92f1", size = 7746, upload-time = "2025-12-13T22:38:57.57Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/97/2e/dec17f6e43f2e4e7e6cebd2d7377b06b762d97cc54f5b646a583b1e5e597/eisp-0.3.8.tar.gz", hash = "sha256:8be91e4176274e6d845b65d8586fb54ba4d01f8519ed9b1e264ebec0f83464df", size = 7838, upload-time = "2026-01-05T14:36:27.011Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/41/16/32d5a255a99526c8e547ae5bbefc9e81b2922c4259f71d8d2310b7b6ed4d/eisp-0.3.7-py3-none-any.whl", hash = "sha256:9aa0e04b23068b22e6bb26c845db1702667abb297c9c412279e7b39f6db31d06", size = 9385, upload-time = "2025-12-13T22:38:56.559Z" },
+    { url = "https://files.pythonhosted.org/packages/c0/e4/a90a4ae638e45e367d18b6bd46e9387355b96d6f06cedfc940e28cdcb084/eisp-0.3.8-py3-none-any.whl", hash = "sha256:b250391d5af2ce19011bf615c62b20e3202b9bdc4d8b547ce68cbdda32d30680", size = 9477, upload-time = "2026-01-05T14:36:26.04Z" },
 ]
 
 [[package]]

@@ -16,7 +16,7 @@ def generate_visualizations():
     for feature_name, feature_vector in features.get_all_features().items():
         print(f"Feature: {feature_name}, Shape: {feature_vector.shape}")
 
-    pca_features = features.apply_pca()
+    pca_features, _pcamodels = features.apply_pca()
 
     for feature_name, feature_vector in features.get_all_features().items():
         print(

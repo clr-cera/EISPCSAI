@@ -77,7 +77,7 @@ def eval_ensemble():
 
     print("Saving feature vectors sizes:")
     with open("./results/ensemble/feature_vector_sizes.txt", "w") as f:
-        for feature_name, feature_vector in feature_vectors.get_all_features().items():
+        for feature_name, feature_vector in train_features.get_all_features().items():
             f.write(f"Feature: {feature_name}, Shape: {feature_vector.shape}\n")
 
     # Plot feature importance
@@ -146,8 +146,6 @@ def eval_ensemble_pca():
 
     labels = (pd.read_csv("rcpd/rcpd_annotation_fix.csv")["csam"] * 1).to_numpy()
 
-    feature_vectors = feature_vectors.apply_pca()
-
     print(
         f"Feature vectors loaded with features: {list(feature_vectors.get_all_features().keys())}"
     )
@@ -158,6 +156,8 @@ def eval_ensemble_pca():
     train_features, test_features, train_indices, test_indices = (
         feature_vectors.train_test_split(test_size=0.2, random_state=42)
     )
+    train_features, pcamodels = train_features.apply_pca()
+    test_features = test_features.apply_pca_models(pcamodels)
 
     train_labels: np.ndarray = labels[train_indices]
     test_labels = labels[test_indices]
@@ -205,7 +205,7 @@ def eval_ensemble_pca():
 
     print("Saving feature vectors sizes after PCA:")
     with open("./results/ensemble_pca/pca_feature_vector_sizes.txt", "w") as f:
-        for feature_name, feature_vector in feature_vectors.get_all_features().items():
+        for feature_name, feature_vector in train_features.get_all_features().items():
             f.write(f"Feature: {feature_name}, Shape: {feature_vector.shape}\n")
 
     # Plot feature importance
@@ -401,7 +401,6 @@ def eval_ensemble_kfold_pca():
         )
 
     labels = (pd.read_csv("rcpd/rcpd_annotation_fix.csv")["csam"] * 1).to_numpy()
-    feature_vectors = feature_vectors.apply_pca()
 
     print(
         f"Feature vectors loaded with features: {list(feature_vectors.get_all_features().keys())}"
@@ -413,6 +412,8 @@ def eval_ensemble_kfold_pca():
     train_features, _test_features, train_indices, test_indices = (
         feature_vectors.train_test_split(test_size=0.2, random_state=42)
     )
+    train_features, pcamodels = train_features.apply_pca()
+    _test_features = _test_features.apply_pca_models(pcamodels)
 
     train_labels: np.ndarray = labels[train_indices]
     _test_labels = labels[test_indices]
@@ -664,8 +665,6 @@ def eval_ensemble_combinatorics_pca():
             feature_vector, copy=False, nan=0.0, posinf=0.0, neginf=0.0
         )
 
-    feature_vectors = feature_vectors.apply_pca()
-
     labels = (pd.read_csv("rcpd/rcpd_annotation_fix.csv")["csam"] * 1).to_numpy()
 
     print(
@@ -678,6 +677,9 @@ def eval_ensemble_combinatorics_pca():
     train_features, test_features, train_indices, test_indices = (
         feature_vectors.train_test_split(test_size=0.2, random_state=42)
     )
+
+    train_features, pcamodels = train_features.apply_pca()
+    test_features = test_features.apply_pca_models(pcamodels)
 
     train_labels: np.ndarray = labels[train_indices]
     test_labels = labels[test_indices]

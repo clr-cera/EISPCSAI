@@ -37,10 +37,12 @@ PIPELINE_STEPS_DINO_ONLY = [
     eval_ensemble_combinatorics_pca,
 ]
 os.makedirs("emissions_logs", exist_ok=True)
+
+
 @track_emissions(
-        project_name="EISP on RCPD",
-        output_dir="emissions_logs",
-        log_level="error",
+    project_name="EISP on RCPD",
+    output_dir="emissions_logs",
+    log_level="error",
 )
 def main():
     print("Starting pipeline for using eisp on rcpd dataset...")
