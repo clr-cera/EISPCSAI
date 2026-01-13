@@ -1,5 +1,5 @@
 from ultralytics import YOLO
-from transformers import ViTImageProcessor, AutoModelForImageClassification
+from transformers import ViTImageProcessor, AutoModelForImageClassification, DeiTModel
 import numpy as np
 from facenet_pytorch import MTCNN
 import logging
@@ -8,7 +8,6 @@ from torchvision import transforms as trn
 import torch
 from torch.autograd import Variable as V
 from PIL import Image
-from model_scripts.thamirismodel import vit_small
 
 import keras
 from keras.models import model_from_json
@@ -68,11 +67,14 @@ def get_scene_model():
 
 def get_scene_thamiris_model():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    scene_thamiris_model = vit_small(patch_size=16)
     scene_thamiris_state_dict = torch.load(
         "models/scenes_thamiris/thamiris_FSL_places600_best.pth", map_location=device
     )
-    scene_thamiris_model.load_state_dict(scene_thamiris_state_dict, strict=False)
+    scene_thamiris_state_dict = scene_thamiris_state_dict['model']
+    scene_thamiris_state_dict = {k.replace("backbone.", ""): v for k, v in scene_thamiris_state_dict.items()}
+
+    scene_thamiris_model = DeiTModel.from_pretrained("facebook/deit-small-distilled-patch16-224")
+    scene_thamiris_model.load_state_dict(scene_thamiris_state_dict)
     return {"device": device, "model": scene_thamiris_model}
 
 
@@ -326,19 +328,25 @@ def get_scene_vector(batch, model=None):
 
 def get_scene_thamiris_vector(batch, device, model=None):
     if model is None:
-        model = vit_small(patch_size=16)
-        state_dict = torch.load(
-            "models/scenes_thamiris/thamiris_FSL_places600_best.pth",
-            map_location=device,
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        scene_thamiris_state_dict = torch.load(
+            "models/scenes_thamiris/thamiris_FSL_places600_best.pth", map_location=device
         )
-        model.load_state_dict(state_dict, strict=False)
+        scene_thamiris_state_dict = scene_thamiris_state_dict['model']
+        scene_thamiris_state_dict = {k.replace("backbone.", ""): v for k, v in scene_thamiris_state_dict.items()}
+
+        scene_thamiris_model = DeiTModel.from_pretrained("facebook/deit-small-distilled-patch16-224")
+        scene_thamiris_model.load_state_dict(scene_thamiris_state_dict)
+        model = scene_thamiris_model
 
     model.to(device)
     batch = batch.float() / 255.0  # Normalize the batch
     batch = batch.to(device)
     with torch.no_grad():
-        feature = model(batch)
-    logging.info("Scene Classification with Thamiris Few Shot Model feature processed")
+        batch_resize = torch.nn.functional.interpolate(batch, size=(224, 224), mode='bilinear', align_corners=False)
+        feature = model(batch_resize)
+        feature = feature[0][:, 0, :]
+    logging.info("Scene Classification with Few Shot Model feature processed")
     logging.info(feature.shape)
     feature = feature.cpu().numpy()
     return feature
