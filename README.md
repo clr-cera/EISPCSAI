@@ -1,4 +1,11 @@
-# EISPCSAI
+# EISP for CSAI Classification
+
+## Link for the paper in arXiv
+https://arxiv.org/abs/2606.15993
+
+## Araceli Project
+
+https://recod.ai/en/projeto/araceli-tecnologias-no-combate-do-abuso-infantil/
 
 ## Entering running environment
 
